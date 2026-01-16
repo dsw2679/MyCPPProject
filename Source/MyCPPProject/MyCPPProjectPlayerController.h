@@ -65,6 +65,9 @@ public:
 
 	/** Constructor */
 	AMyCPPProjectPlayerController();
+	
+	UFUNCTION(BlueprintCallable, Category = "Lyra|Character")
+	void MoveToLocation(const FVector& Dest);
 
 protected:
 

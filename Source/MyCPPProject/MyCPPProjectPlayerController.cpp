@@ -21,11 +21,21 @@ AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 
 	// create the path following comp
 	PathFollowingComponent = CreateDefaultSubobject<UPathFollowingComponent>(TEXT("Path Following Component"));
+	PathFollowingComponent->Initialize();
 
 	// configure the controller
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
 	CachedDestination = FVector::ZeroVector;
+	FollowTime = 0.f;
+}
+
+void AMyCPPProjectPlayerController::MoveToLocation(const FVector& Dest)
+{
+	if (FollowTime <= ShortPressThreshold)
+	{
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, Dest);
+	}
 	FollowTime = 0.f;
 }
 

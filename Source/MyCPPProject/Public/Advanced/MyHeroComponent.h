@@ -9,6 +9,7 @@
 class UMyPawnData;
 class UMyExperienceDefinition;
 struct FGameplayTag;
+struct FInputActionValue;
 
 UCLASS(BlueprintType, Meta = (BlueprintSpawnableComponent))
 class MYCPPPROJECT_API UMyHeroComponent : public UPawnComponent
@@ -31,6 +32,16 @@ protected:
 	// 입력 핸들러 (나중에 캐릭터 클래스에서 호출하거나 여기서 직접 처리)
 	void Input_AbilityInputTagPressed(FGameplayTag InputTag);
 	void Input_AbilityInputTagReleased(FGameplayTag InputTag);
+	
+	// 마우스 우클릭 이동 핸들러
+	void Input_MoveToCursor(const FInputActionValue& InputActionValue);
+	void Input_Move_Triggered(const FInputActionValue& InputActionValue);
+	void Input_Move_Released(const FInputActionValue& InputActionValue);
+
+	// 이동 관련 변수
+	FVector CachedDestination;
+	float FollowTime = 0.f;
+	float ShortPressThreshold = 0.3f;
 
 private:
 	// 현재 사용 중인 PawnData (Experience에서 받아옴)
@@ -39,4 +50,10 @@ private:
 
 	// 입력 바인딩 핸들들을 저장
 	TArray<uint32> AbilityBindHandles;
+	
+	// 초기화가 이미 되었는지 확인하는 플래그
+	bool bHasInitialized = false;
+	
+	// 입력 초기화 플래그
+	bool bInputInitialized = false;
 };

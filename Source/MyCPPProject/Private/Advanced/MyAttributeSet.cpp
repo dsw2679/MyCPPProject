@@ -17,6 +17,12 @@ void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 	{
 		AdjustAttributeForMaxChange(Health, MaxHealth, NewValue, GetHealthAttribute());
 	}
+	
+	// MaxMP 변경 시 MP 비율 조정
+	else if (Attribute == GetMaxMPAttribute())
+	{
+		AdjustAttributeForMaxChange(MP, MaxMP, NewValue, GetMPAttribute());
+	}
 }
 
 void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
@@ -27,6 +33,14 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	{
 		// Health를 0에서 MaxHealth 사이로 제한
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+	}
+	// MP를 0에서 MaxMP 사이로 제한
+	else if (Data.EvaluatedData.Attribute == GetMPAttribute())
+	{
+		float OldValue = GetMP();
+		float ClampedValue = FMath::Clamp(GetMP(), 0.0f, GetMaxMP());
+
+		SetMP(ClampedValue);
 	}
 }
 

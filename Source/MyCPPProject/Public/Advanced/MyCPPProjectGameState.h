@@ -12,7 +12,7 @@ class UMyExperienceManagerComponent;
 ExperienceManagerComponent를 소유하여 게임 모드 설정을 관리합니다.
  */
 UCLASS()
-class MYCPPPROJECT_API AMyCPPProjectGameState : public AModularGameState
+class MYCPPPROJECT_API AMyCPPProjectGameState : public AModularGameStateBase
 {
 	GENERATED_BODY()
 	

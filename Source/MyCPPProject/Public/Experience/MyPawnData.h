@@ -11,6 +11,8 @@ class APawn;
 class UGameplayAbility;
 class UMyInputConfig;
 class UInputMappingContext;
+class UNiagaraSystem;
+class UGameplayEffect;
 
 USTRUCT(BlueprintType)
 struct FMyAbilitySet_GameplayAbility
@@ -47,7 +49,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Input")
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 
-	// 입력 설정 (IMC, Action 매핑 등)
+	// 입력 설정 (IMC, Action 매핑 등)	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Input")
 	TObjectPtr<UMyInputConfig> InputConfig;
+	
+	// 이동 클릭 시 발생할 이펙트 (비워두면 안 나옴)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Visuals")
+	TObjectPtr<UNiagaraSystem> MovementClickEffect;
+	
+	// 게임 시작 시 적용할 GameplayEffect 목록 (스텟 초기화 등)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Abilities")
+	TArray<TSubclassOf<UGameplayEffect>> StartupGameplayEffects;
 };

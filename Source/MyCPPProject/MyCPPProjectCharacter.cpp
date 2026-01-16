@@ -72,12 +72,11 @@ void AMyCPPProjectCharacter::PossessedBy(AController* NewController)
 
 		// GAS에게 Owner(PS)와 Avatar(Character)를 알림
 		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
-	}
-
-	// 2. 그 후에 HeroComponent를 통해 스킬을 부여합니다.
-	if (HeroComponent)
-	{
-		HeroComponent->InitializeAbilitySystem();
+		
+		if (HeroComponent)
+		{
+			HeroComponent->InitializeAbilitySystem();
+		}
 	}
 }
 
@@ -85,19 +84,18 @@ void AMyCPPProjectCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// 1. PlayerState에서 ASC를 가져와 연결합니다. (클라이언트)
+	// PlayerState에서 ASC를 가져와 연결합니다. (클라이언트)
 	AMyCPPProjectPlayerState* PS = GetPlayerState<AMyCPPProjectPlayerState>();
 	if (PS)
 	{
 		AbilitySystemComponent = PS->GetAbilitySystemComponent();
-		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
+		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+		if (HeroComponent)
+		{
+			HeroComponent->InitializeAbilitySystem();
+		}
 	}
-
-	// 2. 클라이언트에서도 스킬 정보 등을 동기화받기 위해 호출
-	if (HeroComponent)
-	{
-		HeroComponent->InitializeAbilitySystem();
-	}
+	
 }
 
 void AMyCPPProjectCharacter::BeginPlay()
