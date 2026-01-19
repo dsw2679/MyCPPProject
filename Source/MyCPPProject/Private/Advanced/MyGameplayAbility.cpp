@@ -4,6 +4,7 @@
 #include "Advanced/MyGameplayAbility.h"
 #include "AbilitySystemComponent.h"
 #include "Advanced/MyAttributeSet.h"
+#include "GameFramework/PlayerController.h"
 
 UMyGameplayAbility::UMyGameplayAbility()
 {
@@ -50,8 +51,39 @@ void UMyGameplayAbility::ApplyEffectWithSetByCaller(TSubclassOf<UGameplayEffect>
 	}
 }
 
+bool UMyGameplayAbility::GetHeroCursorHit(FVector& OutLocation)
+{
+	// 1. 현재 어빌리티의 주인(ActorInfo)으로부터 플레이어 컨트롤러를 가져옵니다.
+	APlayerController* PC = GetActorInfo().PlayerController.Get();
+
+	// 혹시 ActorInfo에 캐싱이 안 되어 있다면 아바타(캐릭터)를 통해 다시 시도
+	if (!PC)
+	{
+		if (APawn* Avatar = Cast<APawn>(GetAvatarActorFromActorInfo()))
+		{
+			PC = Cast<APlayerController>(Avatar->GetController());
+		}
+	}
+
+	// 2. 컨트롤러가 있다면 Hit Result를 계산합니다.
+	if (PC)
+	{
+		FHitResult Hit;
+		// Visibility 채널을 사용하여 마우스 아래를 검사
+		if (PC->GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit))
+		{
+			OutLocation = Hit.Location;
+			return true; // 성공!
+		}
+	}
+
+	// 실패 시 0 벡터 반환
+	OutLocation = FVector::ZeroVector;
+	return false;
+}
+
 void UMyGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
+                                       const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
 {
 	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
 	if (CooldownGE)
@@ -83,7 +115,7 @@ void UMyGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, cons
 			{
 				SpecHandle.Data->SetSetByCallerMagnitude(Pair.Key, Pair.Value);
 			}
-
+	
 			FActiveGameplayEffectHandle ActiveGE = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 			UE_LOG(LogTemp, Warning, TEXT("ApplyCost Result: %s"), ActiveGE.WasSuccessfullyApplied() ? TEXT("SUCCESS") : TEXT("FAILED"));
 		}
@@ -159,5 +191,32 @@ bool UMyGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, cons
 	}
 
 	return true;
+}
+
+void UMyGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+	const FGameplayEventData* TriggerEventData)
+{
+	// 1. 컨트롤러 가져오기
+	if (ActorInfo->PlayerController.IsValid())
+	{
+		// 2. 이동 멈추기 (StopMovement)
+		ActorInfo->PlayerController->StopMovement();
+
+		// PathFollowingComponent도 확실하게 멈추고 싶다면:
+		// ActorInfo->PlayerController->GetPathFollowingComponent()->AbortMove(*this, FPathFollowingResultFlags::OwnerFinished);
+	}
+	// else if (ActorInfo->AvatarActor.IsValid())
+	// {
+	// 	// AI 컨트롤러나 다른 경우 대비
+	// 	if (APawn* Pawn = Cast<APawn>(ActorInfo->AvatarActor.Get()))
+	// 	{
+	// 		if (AController* Controller = Pawn->GetController())
+	// 		{
+	// 			Controller->StopMovement();
+	// 		}
+	// 	}
+	// }
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 }
 

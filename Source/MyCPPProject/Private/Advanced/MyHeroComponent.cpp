@@ -20,6 +20,7 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/Engine.h"
 
 UMyHeroComponent::UMyHeroComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -69,9 +70,12 @@ void UMyHeroComponent::OnExperienceLoaded(const UMyExperienceDefinition* Experie
     {
         return;
     }
+    
+    
 
     APawn* Pawn = GetPawn<APawn>();
     if (!Pawn) return;
+    
     
     // 1. GAS 초기화 및 스킬 부여
     IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Pawn);
@@ -80,8 +84,11 @@ void UMyHeroComponent::OnExperienceLoaded(const UMyExperienceDefinition* Experie
         UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
         if (ASC)
         {
+            
             if (Pawn->HasAuthority())
             {
+                // InputID값을 고유하게 줘야 부여한 스킬들이 서로 다른것을 프로그램이 인식함
+                int32 InputID = 0;
                 // Ability 스킬 부여 로직 
                 for (const FMyAbilitySet_GameplayAbility& AbilitySet : PawnData->Abilities)
                 {
@@ -91,6 +98,8 @@ void UMyHeroComponent::OnExperienceLoaded(const UMyExperienceDefinition* Experie
                         Spec.SourceObject = GetOwner();
                         Spec.Level = 1;
 
+                        Spec.InputID = InputID++;
+                        
                         if (AbilitySet.InputTag.IsValid())
                         {
                             Spec.GetDynamicSpecSourceTags().AddTag(AbilitySet.InputTag);
@@ -187,6 +196,11 @@ void UMyHeroComponent::InitializePlayerInput(UInputComponent* PlayerInputCompone
 
 void UMyHeroComponent::Input_AbilityInputTagPressed(FGameplayTag InputTag)
 {
+    // [디버그 로그 추가] 화면에 현재 들어온 태그 이름을 빨간색으로 띄웁니다.
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Pressed Tag: %s"), *InputTag.ToString()));
+    }
     // 캐릭터의 GAS에게 입력이 눌렸음을 전달
     IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetPawn<APawn>());
     if (!ASI) return;

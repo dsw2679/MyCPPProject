@@ -32,6 +32,7 @@ public class MyCPPProject : ModuleRules
 			"CommonUser",
 			"UIExtension",
 			"GameplayMessageRuntime",
+			"MotionWarping"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

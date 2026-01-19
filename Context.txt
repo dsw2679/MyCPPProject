@@ -27,6 +27,92 @@ Run_Attack_01_Seq
 (HP포션,일정시간 공격력을 상승시키는 아드로핀, 적이 받는 데미지를 증폭시켜주는 암흑수류탄, 아이덴티티 게이지를 회복시켜주는 각성물약)
 보스 처치시 짧은 승리모션후 게임종료
 
+[플레이어 캐릭터 기획]
+  1. 클래스 컨셉 (Class Concept)
+   * 키워드: 번개, 대검, 폭발적인 기동성
+   * 전투 스타일: 거대한 검을 휘두르는 묵직한 근접 공격과 번개를 떨어뜨리는 중거리 마법을 섞어 사용합니다. 빠른 돌진기로 진입하여 강력한 한 방을 꽂는 '돌격형 딜러'입니다.
+   * 아이덴티티 (Identity - Z키): 뇌전 충전 (Overcharge)
+       * 적을 타격하여 게이지를 채웁니다.
+       * Z키 발동 시 20초간 '뇌신 모드'에 돌입.
+       * 효과: 공격 속도 20% 증가, 스킬 쿨타임 30% 감소, 모든 스킬 이펙트가 푸른색에서 붉은색 번개로 강화.
+
+  ---
+
+  2. 스킬 구성 (8 Skills + 1 Awakening)
+
+  로스트아크는 스킬 타입(콤보, 지점, 홀딩, 차징, 일반)이 다양해야 재미가 있습니다. 광(Kwang)의 애니메이션을 최대한 활용할 수 있도록 구성했습니다.
+
+  [Q] 뇌명 (Thunder Flash) - 콤보 (anim : Combo_Attack_02)
+   * 타입: 콤보 (4회 입력) / 주력기
+   * 설명:
+       1. 전방으로 짧게 몸을 돌려 적을 벱니다.
+       2. 재입력 시 검을 위로 쳐올리고 내려벱니다.
+       3. 전방으로 짧게 검을 찌릅니다.
+       4. 몸을 크게 돌려 검을 휘두릅니다.
+   * 특수 효과: 피격 이상 면역(슈퍼아머 - 경직 무시).
+
+  [W] 낙뢰참 (Lightning Cleave) - 일반 / 견제기 (anim : ability_R)
+   * 타입: 일반
+   * 설명: 제자리에서 검을 휘두름과 동시에 전방 부채꼴 범위에 번개를 뿌립니다. 적중된 적은 8초간 받는피해가 6%증가합니다.
+   * 특수 효과: 시너지스킬, 적에게 받는피해 6%증가 부여
+
+  [E] 벼락의 심판 (Judgement) - 지점 / 원거리 (anim : ability_Q_throw)
+   * 타입: 지점 조작 (Point & Click)
+   * 설명: 마우스 커서 위치에 검을 공중에서 소환해 꽂아버립니다. 꽂힌 검 주변에 지속적인 번개 장판 데미지를 줍니다.
+
+  [R] 뇌룡승천 (Rising Dragon) - 콤보 / 광역 딜링 (anim : Attack_UP_Floor_To_Air_02_Seq & Attack_Air_to_Floor_01)
+   * 타입: 콤보 (2타)
+   * 설명:
+       1. 회전하며 뛰어올라 1차적으로 데미지를 줍니다.
+       2. 검을 내려꽂으며 주변에 충격파를 발생시킵니다.
+
+   * 특수 효과: 무력화(중).
+
+  [A] 전광석화 (Flash Step) - 카운터 / 이동기 (anim : Run_Attack_01_Seq)
+   * 타입: 일반
+   * 설명: 몸과 검을 회전시키며 앞으로 돌진합니다.
+   * 특수 효과: 카운터 어택 (보스의 전조 동작 시 맞추면 무력화), 피격 이상 면역.
+
+  [S] 뇌전 폭풍 (Storm Blade) - 홀딩 / 광역기 (anim : Recall)
+   * 타입: 홀딩 (키 지속)
+   * 설명: 제자리에서 검을 머리 위로 핑핑 돌리며 주변 적들을 끌어당기는 회오리를 생성합니다. 키를 놓거나 지속 시간이 끝나면 회오리가 흩어집니다.
+
+  [D] 뇌신의 가호 (Thunder Shield) - 버프 / 쉴드 (anim : ability_RMB)
+   * 타입: 일반
+   * 설명: 검을 자신의 앞에 두손으로 쥐며 자신에게 번개 보호막을 씌웁니다.
+   * 효과: 6초간 최대 체력의 15% 쉴드 생성 + 매 초마다 주변 적에게 데미지를 줌
+
+  [F] 천둥 벼락 (Heaven's Fury) - 차징 / 일반필살기 (anim : execution_03_Seq)
+   * 타입: 차징 (게이지 충전)
+   * 설명: 기를 모아 번개 에너지를 응축시킵니다. (차징 중 이동 불가, 방향 전환 가능)
+       * 오버차지(Perfect Zone) 성공 시: 전방으로 지면에 주먹을 내리쳐 충격파를 발생시킵니다.
+   * 특수 효과: 무력화(최상)
+
+  ---
+
+  3. 각성기 (Awakening - V키)
+
+  [V] 뇌신강림 : 라그나로크 (God of Thunder: Ragnarok)
+   * 연출: 카메라가 줌아웃되며, 캐릭터가 공중으로 높이 솟구칩니다. 구름 위에서 거대한 뇌신(혹은 거대화된 검)의 형상이 나타나 지상을 향해 멸망의 벼락을 내리꽂습니다.
+   * 효과: 화면 전체 범위에 막대한 데미지를 입힙니다.
+   * 특수: 사용 후 아이덴티티 게이지 100% 회복.
+
+  ---
+
+ 4. Kwang 에셋을 활용한 평타 기획 (4단 콤보)
+
+   * 1타 (좌클릭): 우측에서 좌측으로 대각선 베어올리기.
+   * 2타 (좌클릭): 좌측에서 우측으로 대각선 베어올리기.
+   * 3타 (좌클릭): 우측에서 좌측으로 대각선 베어내리기.
+   * 4타 (좌클릭 - 피니시): 좌측에서 우측으로 수평베기.
+
+  < 기술적 구현 포인트 >
+
+   1. 후딜 캔슬 (Animation Cancel):
+       * 평타 4타를 치는 도중에 스킬(Q, W...)이나 회피기(Space)를 쓰면, 평타 모션이 즉시 취소되고 스킬이 나가야 합니다. 이 반응성이 없으면 조작감이 매우 답답해집니다.
+   2. 오토 타겟 보정 (Auto Targeting / Magnetism):
+       * 로스트아크는 마우스 방향으로 공격하지만, 근처에 적이 있으면 살짝 회전해서 맞춰줍니다. 평타 사용 시 아주 약하게 가장 가까운 적 방향으로 캐릭터를 회전시키는(targeting system & motion warping) 기능을 넣으면 타격감이 훨씬 좋아집니다.
+
 [5주 로드맵]
 
  * 1주차: C++ Core & Camera (Foundation)
@@ -38,7 +124,7 @@ Run_Attack_01_Seq
  * 2주차: C++ GAS Combat System
      * C++: AttributeSet (HP, MP, IdentityGauge, Stagger).
      * C++: GameplayAbility Base Class (스킬 쿨타임, 비용 로직).
-     * Abilities: 평타(Combo), 스킬 3종 구현.
+     * Abilities: 평타(Combo), 스킬 구현.
  * 3주차: C++ Boss AI (Sevarog)
      * C++: AIController, BTTask (Custom Logic).
      * Pattern: 페이즈 전환, 광역기, 어그로 시스템.
@@ -71,7 +157,7 @@ Run_Attack_01_Seq
  * 결과: 기존 AMyCPPProjectCharacter에 있던 복잡한 로직들이 싹 사라지고 이 컴포넌트로 이동합니다.
 
 
-## 📝 오늘 한 일
+[어제 한 일]
 
 1. 애니메이션 리타기팅 (IK Retargeting)
 - 작업 내용: Sword_and_Shield의 애니메이션을 ParagonKwang 스켈레톤에 맞게 변환.
@@ -92,7 +178,64 @@ Run_Attack_01_Seq
 - 무기 분리: ABP의 Transform (Modify) Bone 노드를 사용하여 Kwang의 기본 검(weapon_r) 스케일을 0으로 조절해 숨김.
 - 조작감 개선: 탑다운 뷰에 적합하도록 카메라 Spring Arm의 Lag 설정을 해제하여 캐릭터와 카메라의 동기화 최적화.
 
-## 📋 내일 할 일
+[오늘 할 일]
 
-1. 이동 애니메이션과 속도의 일치 필요( 사용자 불편)
-2. GA_Skill_ 구현
+1. 평타, 스페이스바 회피(피격이상 면역, 경직이상 면역, 상태이상 면역) 구현
+2. GA_Skill_ QWERASDF 구현
+
+
+
+
+
+[오늘의 목표] 평타 & 스페이스바 회피 구현 설계
+
+요청하신 "Lost Ark" 스타일의 조작감을 위해서는 단순 애니메이션 재생이 아닌, GAS(Gameplay Ability System)와 Motion
+Warping(모션 워핑)의 결합이 필수적입니다.
+
+---
+
+1. 사전 작업: 필수 플러그인 및 모듈 설정
+평타의 오토 타겟 보정(Auto Targeting) 기능을 위해 언리얼 엔진의 MotionWarping 플러그인을 사용해야 합니다.
+ * Action: MyCPPProject.Build.cs에 "MotionWarping" 모듈 추가.
+ * Action: AMyCPPProjectCharacter 클래스에 UMotionWarpingComponent 추가 (C++).
+
+---
+
+2. 입력(Input) 구성 (Lyra 스타일)
+MyHeroComponent가 InputConfig 데이터 에셋을 참조하므로, 코드를 직접 수정하는 대신 데이터를 생성/연결해야 합니다.
+ * Input Action 생성: IA_Attack (좌클릭), IA_Evade (스페이스바).
+ * Mapping Context: IMC_Default에 위 액션 추가.
+ * Input Config: DA_InputConfig (또는 유사 파일)에 액션 등록.
+     * IA_Attack -> InputTag.Ability.Attack
+     * IA_Evade -> InputTag.Ability.Evade
+
+---
+
+3. 스페이스바 회피 (`GA_Evade`) 설계
+단순 이동기가 아닌 "피격/상태이상 면역"이 핵심이므로 GAS GameplayEffect(GE)를 활용합니다.
+ * 구현 방식: Blueprint Gameplay Ability (GA_Evade_Kwang)
+ * 로직:
+     1. Activate: GE_Immunity (면역 상태 부여) 적용.
+     2. Play Montage: Run_Attack_01_Seq (또는 Roll_Combat 등) 재생.
+     3. Wait Gameplay Event: 몽타주 종료(BlendOut) 시 능력 종료.
+     4. End: GE_Immunity 제거.
+ * 면역 처리: GE_Immunity는 State.Immune, State.SuperArmor 태그를 부여하여 피격 판정 시 이를 체크해 데미지를
+   무효화하도록 설정.
+
+---
+
+4. 평타 4단 콤보 (`GA_Attack`) 설계
+가장 중요한 "후딜 캔슬"과 "입력 선입력(Input Queuing)"을 깔끔하게 처리하기 위해 C++ 베이스 클래스를 만드는 것을 강력
+추천합니다.
+
+ * C++ Base Class: `UMyGameplayAbility_Combo`
+     * 역할: 콤보 카운트 관리, 입력 타이밍 창(Window) 제어.
+     * 주요 기능:
+         * CurrentComboIndex: 현재 몇 타째인지 (0~3).
+         * NextComboQueued: 공격 중 클릭 시 다음 공격 예약.
+         * TryNextCombo(): 몽타주 Notify(ComboWindowOpen) 시점에 예약된 입력이 있으면 다음 동작 실행.
+ * Blueprint Implementation: `GA_Attack_Kwang`
+     * C++ 클래스 상속.
+     * Montage List: 기획된 4개의 애니메이션 할당.
+     * Motion Warping: 각 몽타주에 MotionWarping NotifyState를 추가하여, 공격 순간 캐릭터가 마우스 커서(또는 타겟)
+       방향으로 자동 회전하도록 설정.

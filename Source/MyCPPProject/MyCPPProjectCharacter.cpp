@@ -12,6 +12,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Advanced/MyCPPProjectPlayerState.h"
+#include "MotionWarpingComponent.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
 
@@ -53,6 +54,9 @@ AMyCPPProjectCharacter::AMyCPPProjectCharacter()
 	
 	// HeroComponent 생성
 	HeroComponent = CreateDefaultSubobject<UMyHeroComponent>(TEXT("HeroComponent"));
+	
+	// Create Motion Warping Component
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 UAbilitySystemComponent* AMyCPPProjectCharacter::GetAbilitySystemComponent() const

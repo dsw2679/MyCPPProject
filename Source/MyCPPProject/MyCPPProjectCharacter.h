@@ -11,6 +11,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class UAbilitySystemComponent;
 class UMyHeroComponent;
+class UMotionWarpingComponent;
 
 /**
  *  A controllable top-down perspective character
@@ -29,9 +30,14 @@ private:
 	/** Camera boom positioning the camera above the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
-
+	
+	// ASC
 	UPROPERTY()
 	TWeakObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+	
+	// Motion Warping Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UMotionWarpingComponent> MotionWarpingComponent;
 	
 protected:
 	// 히어로 컴포넌트

@@ -33,7 +33,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ability|Effect")
 	void ApplyEffectWithSetByCaller(TSubclassOf<UGameplayEffect> EffectClass, FGameplayTag DataTag, float Magnitude);
 	
-	// [설정] 쿨타임 시간 (초 단위)
+	// [설정] 쿨타임 시간 (초 단위)+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Cooldown")
 	float CooldownDuration = 0.0f;
 
@@ -46,6 +46,14 @@ public:
 	// 예: SetByCaller.Cost.MP : 20.0
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Cost")
 	TMap<FGameplayTag, float> CostMap;
+	
+	/**
+	* [Helper] 마우스 커서가 가리키는 바닥 위치를 가져옵니다.
+	* @param OutLocation : 결과 위치가 담길 변수
+	* @return : 성공적으로 가져왔으면 true 반환
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Lyra|Input")
+	bool GetHeroCursorHit(FVector& OutLocation);
 
 	// --- 오버라이드 함수 ---
 
@@ -60,4 +68,8 @@ public:
 	// 비용 검사 (SetByCaller 값을 주입하여 검사)
 	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
 		OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+	
+	// activateability하면 이동을 멈추기위해 함수 오버라이드
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 };
