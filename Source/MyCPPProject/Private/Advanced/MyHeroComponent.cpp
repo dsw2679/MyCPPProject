@@ -252,6 +252,8 @@ void UMyHeroComponent::Input_MoveToCursor(const FInputActionValue& InputActionVa
     APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
     if (!PC) return;
 
+    // 기존 이동 명령 취소
+    PC->StopMovement();
     // 마우스 커서 위치 찾기
     FHitResult Hit;
     bool bHitSuccessful = PC->GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
@@ -289,10 +291,13 @@ void UMyHeroComponent::Input_Move_Triggered(const FInputActionValue& InputAction
     APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
     if (!PC) return;
 
-    // 1. 누르고 있는 시간 누적
+    // 기존 이동 명령 취소
+    PC->StopMovement();
+    
+    // 누르고 있는 시간 누적
     FollowTime += GetWorld()->GetDeltaSeconds();
 
-    // 2. 마우스 커서 위치 찾기
+    // 마우스 커서 위치 찾기
     FHitResult Hit;
     bool bHitSuccessful = PC->GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
 
@@ -300,8 +305,7 @@ void UMyHeroComponent::Input_Move_Triggered(const FInputActionValue& InputAction
     {
         CachedDestination = Hit.Location;
     }
-
-    // 3. 직접 이동 (WASD처럼 즉시 이동)
+    
     // 캐릭터가 커서 방향으로 계속 움직이게 함
     FVector WorldDirection = (CachedDestination - Pawn->GetActorLocation()).GetSafeNormal();
     Pawn->AddMovementInput(WorldDirection, 1.0f, false);
@@ -318,6 +322,8 @@ void UMyHeroComponent::Input_Move_Released(const FInputActionValue& InputActionV
             APlayerController* PC = Cast<APlayerController>(Pawn->GetController());
             if (PC)
             {
+                // 기존 이동 명령 취소
+                PC->StopMovement();
                 // 네비게이션 시스템을 이용해 길찾기 이동
                 UAIBlueprintHelperLibrary::SimpleMoveToLocation(PC, CachedDestination);
             }

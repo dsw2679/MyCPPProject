@@ -32,6 +32,7 @@ AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 
 void AMyCPPProjectPlayerController::MoveToLocation(const FVector& Dest)
 {
+	StopMovement();
 	if (FollowTime <= ShortPressThreshold)
 	{
 		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, Dest);

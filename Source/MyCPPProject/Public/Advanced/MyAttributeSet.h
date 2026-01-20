@@ -62,4 +62,9 @@ protected:
 	FGameplayAttributeData Stagger;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, Stagger)
 	
+	// 피증 시너지
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData DamageScale;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, DamageScale)
+	
 };

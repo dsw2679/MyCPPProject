@@ -14,13 +14,6 @@ Sevarog 보유 모션 ( Cast, Emote_Pointing_MC_T3, Emote_pull_MC_T1, Speedburst
 플레이어 : Contents/ParagonKwang
 kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 쥐며 힘모으기, 평타a, 평타b, 평타c, 평타d, 귀환)
 
-Combo_Attack_02
-Combo_Attack_01_04_Seq
-Attack_Air_to_Floor_01
-Attack_UP_Floor_To_Air_02_Seq
-Roll_Combat_F_0_Seq
-Run_Attack_01_Seq
-
 [구현 목표]
 프로그램 실행시 캐릭터 선택창에서 ParagonKwang 캐릭터 선택가능. 선택후 게임시작 버튼 클릭시 보스가 있는 레벨 진입. 보스는 플레이어에게 랜덤하게 일반패턴 진행,
 일정시간마다 시간제 패턴 진행, 일정 피가 되면 특수패턴진행. 플레이어는 스페이스바 회피, qwerasdf칸에 할당된 총 8개의 전투, 버프 스킬 사용가능. 1234칸에 배정된 배틀아이템 사용가능
@@ -51,7 +44,7 @@ Run_Attack_01_Seq
        4. 몸을 크게 돌려 검을 휘두릅니다.
    * 특수 효과: 피격 이상 면역(슈퍼아머 - 경직 무시).
 
-  [W] 낙뢰참 (Lightning Cleave) - 일반 / 견제기 (anim : ability_R)
+  [W] 낙뢰참 (Lightning Cleave) - 일반 / 견제기 (anim : ability_R) (area : NS_DynamicCollisionVFX5)
    * 타입: 일반
    * 설명: 제자리에서 검을 휘두름과 동시에 전방 부채꼴 범위에 번개를 뿌립니다. 적중된 적은 8초간 받는피해가 6%증가합니다.
    * 특수 효과: 시너지스킬, 적에게 받는피해 6%증가 부여
@@ -159,83 +152,25 @@ Run_Attack_01_Seq
 
 [어제 한 일]
 
-1. 애니메이션 리타기팅 (IK Retargeting)
-- 작업 내용: Sword_and_Shield의 애니메이션을 ParagonKwang 스켈레톤에 맞게 변환.
-- 문제 해결: 리타기팅 시 목이 돌아가는 현상을 Edit Retarget Pose 모드에서 기준 포즈를 수동 교정하여 해결.
-2. C++ 기반 AnimInstance 구축
-- 클래스 생성: UMyCPPProjectAnimInstance (C++) 생성 및 ABP 부모 클래스로 지정.
-- Lyra/GAS 연동: AbilitySystemComponent를 캐싱하고 HasGameplayTag 헬퍼 함수를 추가하여 향후 GAS 시스템과 호환되도록
-설계.
-- 로직 최적화: NativeUpdateAnimation에서 매 프레임 GroundSpeed와 bShouldMove를 계산. (이벤트 그래프 노드 최소화)
-3. 마우스 이동 방식 최적화 (Locomotion)
-- 상태 머신 구조: Idle -> Start -> Loop -> Stop 순환 구조 구현.
-- 판정 기준 변경: 마우스 클릭 이동 방식에 맞춰 bShouldMove 조건을 가속도 대신 실제 속도(`GroundSpeed > 3.0f`)
-기반으로 수정하여 반응성 확보.
-- 반응성 개선:
-    - 출발 도중 멈추는 경우를 위해 Start -> Stop 트랜지션(Early Exit) 추가.
-    - Start 모션 반복 문제를 Automatic Rule 및 Time Remaining 수동 설정을 통해 해결.
-4. 외형 및 카메라 설정
-- 무기 분리: ABP의 Transform (Modify) Bone 노드를 사용하여 Kwang의 기본 검(weapon_r) 스케일을 0으로 조절해 숨김.
-- 조작감 개선: 탑다운 뷰에 적합하도록 카메라 Spring Arm의 Lag 설정을 해제하여 캐릭터와 카메라의 동기화 최적화.
+1. 평타 (4단 콤보) 구현
+- GAS 기반 콤보 시스템: UGameplayAbility_Combo (C++) 클래스를 제작하여 콤보 로직을 구조화했습니다.
+- 빠른 반응성 (Animation Cancel): 몽타주가 끝날 때까지 기다리지 않고, AN_ComboCheck (Notify) 시점에 입력을 확인하여 즉시 다음 공격으로 넘어가는 "칼반응 콤보"를 구현했습니다.
+- 선입력 & 후입력 지원: 공격 중 미리 누르면 예약되고(Queue), 타이밍을 놓쳐도 모션이 끝나기 전이면 즉시 발동되는 로직을 C++로 완성했습니다.
+- 모션 워핑 (Motion Warping): 공격 시 마우스 방향으로 캐릭터가 자동 회전하도록 구현했습니다.
+2. 스페이스바 회피 (Evade) 구현
+- 즉시 발동 & 캔슬: 평타 도중에도 즉시 캔슬하고 회피가 나가도록 우선순위(Cancel Ability)를 설정했습니다.
+- 마우스 방향 회전: GetHeroCursorHit (C++ Helper)를 활용하여, 캐릭터가 보는 방향이 아닌 마우스 커서 방향으로 구르도록 만들었습니다.
+- 면역 & 쿨타임: 회피 중 State.Immunity (면역) 태그를 부여하고, 5초의 쿨타임을 적용했습니다.
+3. Q 스킬 (뇌명) 구현
+- 콤보 재사용: 평타와 같은 Combo 시스템을 상속받아 4단 콤보 스킬을 쉽게 구현했습니다.
+- 슈퍼 아머: 스킬 시전 시 State.SuperArmor를 부여하고, 종료 시(EndAbility) C++에서 자동으로 제거되도록 안전장치를 마련했습니다.
+- 비용 & 쿨타임: 마나 소모와 쿨타임이 정상적으로 적용되도록 GAS 설정을 바로잡았습니다.
+4. 핵심 버그 해결 (트러블슈팅)
+- 입력 충돌 해결: 컨트롤러(PlayerController)와 GAS(HeroComponent)가 좌클릭 입력을 두고 싸우던 문제를 해결했습니다. (컨트롤러 이동 로직 제거 및 InputID 할당)
+- 데이터 꼬임 해결: InputConfig, PawnData의 매핑 오류를 찾아내고, InputID를 동적 할당하여 Q와 평타가 뒤바뀌는 현상을 완벽히 고쳤습니다.
+- 비용(Cost) 문제 해결: CostMap이 비어있으면 비용을 쓰지 않도록 C++ 코드를 수정하여, 평타 사용 시 마나가 닳는 문제를 영구적으로 방지했습니다.
+- 이동 버벅임 해결: 스킬 사용 시 StopMovement를 호출하여 이전 이동 명령과 충돌하지 않도록 했습니다.
 
 [오늘 할 일]
 
-1. 평타, 스페이스바 회피(피격이상 면역, 경직이상 면역, 상태이상 면역) 구현
-2. GA_Skill_ QWERASDF 구현
-
-
-
-
-
-[오늘의 목표] 평타 & 스페이스바 회피 구현 설계
-
-요청하신 "Lost Ark" 스타일의 조작감을 위해서는 단순 애니메이션 재생이 아닌, GAS(Gameplay Ability System)와 Motion
-Warping(모션 워핑)의 결합이 필수적입니다.
-
----
-
-1. 사전 작업: 필수 플러그인 및 모듈 설정
-평타의 오토 타겟 보정(Auto Targeting) 기능을 위해 언리얼 엔진의 MotionWarping 플러그인을 사용해야 합니다.
- * Action: MyCPPProject.Build.cs에 "MotionWarping" 모듈 추가.
- * Action: AMyCPPProjectCharacter 클래스에 UMotionWarpingComponent 추가 (C++).
-
----
-
-2. 입력(Input) 구성 (Lyra 스타일)
-MyHeroComponent가 InputConfig 데이터 에셋을 참조하므로, 코드를 직접 수정하는 대신 데이터를 생성/연결해야 합니다.
- * Input Action 생성: IA_Attack (좌클릭), IA_Evade (스페이스바).
- * Mapping Context: IMC_Default에 위 액션 추가.
- * Input Config: DA_InputConfig (또는 유사 파일)에 액션 등록.
-     * IA_Attack -> InputTag.Ability.Attack
-     * IA_Evade -> InputTag.Ability.Evade
-
----
-
-3. 스페이스바 회피 (`GA_Evade`) 설계
-단순 이동기가 아닌 "피격/상태이상 면역"이 핵심이므로 GAS GameplayEffect(GE)를 활용합니다.
- * 구현 방식: Blueprint Gameplay Ability (GA_Evade_Kwang)
- * 로직:
-     1. Activate: GE_Immunity (면역 상태 부여) 적용.
-     2. Play Montage: Run_Attack_01_Seq (또는 Roll_Combat 등) 재생.
-     3. Wait Gameplay Event: 몽타주 종료(BlendOut) 시 능력 종료.
-     4. End: GE_Immunity 제거.
- * 면역 처리: GE_Immunity는 State.Immune, State.SuperArmor 태그를 부여하여 피격 판정 시 이를 체크해 데미지를
-   무효화하도록 설정.
-
----
-
-4. 평타 4단 콤보 (`GA_Attack`) 설계
-가장 중요한 "후딜 캔슬"과 "입력 선입력(Input Queuing)"을 깔끔하게 처리하기 위해 C++ 베이스 클래스를 만드는 것을 강력
-추천합니다.
-
- * C++ Base Class: `UMyGameplayAbility_Combo`
-     * 역할: 콤보 카운트 관리, 입력 타이밍 창(Window) 제어.
-     * 주요 기능:
-         * CurrentComboIndex: 현재 몇 타째인지 (0~3).
-         * NextComboQueued: 공격 중 클릭 시 다음 공격 예약.
-         * TryNextCombo(): 몽타주 Notify(ComboWindowOpen) 시점에 예약된 입력이 있으면 다음 동작 실행.
- * Blueprint Implementation: `GA_Attack_Kwang`
-     * C++ 클래스 상속.
-     * Montage List: 기획된 4개의 애니메이션 할당.
-     * Motion Warping: 각 몽타주에 MotionWarping NotifyState를 추가하여, 공격 순간 캐릭터가 마우스 커서(또는 타겟)
-       방향으로 자동 회전하도록 설정.
+1. GA_Skill_ WERASDF V 구현

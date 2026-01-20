@@ -47,6 +47,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Cost")
 	TMap<FGameplayTag, float> CostMap;
 	
+	// 쿨타임 태그를 GE에서 가져오지 않고, 우리가 설정한 CooldownTag 변수에서 직접 가져오도록 변경
+	virtual const FGameplayTagContainer* GetCooldownTags() const override;
+	
 	/**
 	* [Helper] 마우스 커서가 가리키는 바닥 위치를 가져옵니다.
 	* @param OutLocation : 결과 위치가 담길 변수
@@ -54,7 +57,25 @@ public:
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Lyra|Input")
 	bool GetHeroCursorHit(FVector& OutLocation);
+	
+	/**
+	* [Helper] 캐릭터를 마우스 커서 방향으로 회전시킵니다. (Yaw축만 회전)
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Lyra|Input")
+	void RotateToCursor();
+	
+	/**
+	* 캐릭터를 강제로 이동시킵니다. (Launch Character 래핑)
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Lyra|Ability")
+	void LaunchAvatarCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride);
 
+	/**
+	 * 캐릭터의 중력을 조절합니다.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Lyra|Ability")
+	void SetGravityScale(float NewGravityScale);
+	
 	// --- 오버라이드 함수 ---
 
 	// 쿨타임 GE에 수치를 주입하여 반환
@@ -72,4 +93,9 @@ public:
 	// activateability하면 이동을 멈추기위해 함수 오버라이드
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	
+private:
+	// 태그 컨테이너를 반환하기 위한 임시 저장소
+	UPROPERTY(Transient)
+	FGameplayTagContainer TempCooldownTags;
 };

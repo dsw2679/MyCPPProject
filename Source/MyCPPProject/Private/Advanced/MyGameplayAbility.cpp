@@ -5,6 +5,8 @@
 #include "AbilitySystemComponent.h"
 #include "Advanced/MyAttributeSet.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 UMyGameplayAbility::UMyGameplayAbility()
 {
@@ -51,6 +53,22 @@ void UMyGameplayAbility::ApplyEffectWithSetByCaller(TSubclassOf<UGameplayEffect>
 	}
 }
 
+const FGameplayTagContainer* UMyGameplayAbility::GetCooldownTags() const
+{
+	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	MutableTags->Reset(); // 초기화
+
+	if (CooldownTag.IsValid())
+	{
+		// 설정된 태그만 반환
+		MutableTags->AddTag(CooldownTag);
+		return MutableTags;
+	}
+
+	// 설정된 게 없으면 부모 로직(GE의 태그 확인)을 따름
+	return Super::GetCooldownTags();
+}
+
 bool UMyGameplayAbility::GetHeroCursorHit(FVector& OutLocation)
 {
 	// 1. 현재 어빌리티의 주인(ActorInfo)으로부터 플레이어 컨트롤러를 가져옵니다.
@@ -82,6 +100,50 @@ bool UMyGameplayAbility::GetHeroCursorHit(FVector& OutLocation)
 	return false;
 }
 
+void UMyGameplayAbility::RotateToCursor()
+{
+	// 아바타(캐릭터) 가져오기
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!AvatarActor) return;
+
+	// 마우스 커서 위치 가져오기
+	FVector CursorLocation;
+	if (GetHeroCursorHit(CursorLocation))
+	{
+		// 캐릭터 위치 가져오기
+		FVector StartLocation = AvatarActor->GetActorLocation();
+
+		// 바라볼 회전값 계산 (FindLookAtRotation 기능)
+		// KismetMathLibrary::FindLookAtRotation와 동일한 로직
+		FRotator LookAtRotation = (CursorLocation - StartLocation).Rotation();
+
+		// Yaw(수평 회전)만 적용하고 Pitch/Roll은 0으로 고정 (기울어짐 방지)
+		FRotator NewRotation = FRotator(0.0f, LookAtRotation.Yaw, 0.0f);
+
+		// 회전 적용
+		AvatarActor->SetActorRotation(NewRotation);
+	}
+}
+
+void UMyGameplayAbility::LaunchAvatarCharacter(FVector LaunchVelocity, bool bXYOverride, bool bZOverride)
+{
+	if (ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	{
+		Character->LaunchCharacter(LaunchVelocity, bXYOverride, bZOverride);
+	}
+}
+
+void UMyGameplayAbility::SetGravityScale(float NewGravityScale)
+{
+	if (ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+	{
+		if (UCharacterMovementComponent* CMC = Character->GetCharacterMovement())
+		{
+			CMC->GravityScale = NewGravityScale;
+		}
+	}
+}
+
 void UMyGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
                                        const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
 {
@@ -92,9 +154,14 @@ void UMyGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
 		if (SpecHandle.IsValid())
 		{
 			// 쿨타임 시간 주입 (기본 태그: SetByCaller.Cooldown)
-			FGameplayTag TagToUse = CooldownTag.IsValid() ? CooldownTag : FGameplayTag::RequestGameplayTag(FName("SetByCaller.Cooldown"));
-			SpecHandle.Data->SetSetByCallerMagnitude(TagToUse, CooldownDuration);
-
+			FGameplayTag DurationTag = FGameplayTag::RequestGameplayTag(FName("SetByCaller.Cooldown"));
+			SpecHandle.Data->SetSetByCallerMagnitude(DurationTag, CooldownDuration);
+			
+			// 쿨다운 태그 동적 주입
+			if (CooldownTag.IsValid())
+			{
+				SpecHandle.Data->DynamicGrantedTags.AddTag(CooldownTag);
+			}
 			ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 		}
 	}
