@@ -34,6 +34,7 @@ protected:
 		const FGameplayAttribute& AffectedAttributeProperty
 	);
 	
+public:
 	// 체력 관련
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	FGameplayAttributeData Health;
@@ -66,5 +67,15 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	FGameplayAttributeData DamageScale;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, DamageScale)
+	
+	// 플레이어 공격력
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData AttackPower;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, AttackPower)
+	
+	// 들어오는 데미지 값을 임시로 저장하는 메타 속성
+	UPROPERTY(BlueprintReadOnly, Category = "Lyra|Health", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData Damage;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, Damage);
 	
 };

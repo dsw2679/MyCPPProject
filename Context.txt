@@ -152,25 +152,22 @@ kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 �
 
 [어제 한 일]
 
-1. 평타 (4단 콤보) 구현
-- GAS 기반 콤보 시스템: UGameplayAbility_Combo (C++) 클래스를 제작하여 콤보 로직을 구조화했습니다.
-- 빠른 반응성 (Animation Cancel): 몽타주가 끝날 때까지 기다리지 않고, AN_ComboCheck (Notify) 시점에 입력을 확인하여 즉시 다음 공격으로 넘어가는 "칼반응 콤보"를 구현했습니다.
-- 선입력 & 후입력 지원: 공격 중 미리 누르면 예약되고(Queue), 타이밍을 놓쳐도 모션이 끝나기 전이면 즉시 발동되는 로직을 C++로 완성했습니다.
-- 모션 워핑 (Motion Warping): 공격 시 마우스 방향으로 캐릭터가 자동 회전하도록 구현했습니다.
-2. 스페이스바 회피 (Evade) 구현
-- 즉시 발동 & 캔슬: 평타 도중에도 즉시 캔슬하고 회피가 나가도록 우선순위(Cancel Ability)를 설정했습니다.
-- 마우스 방향 회전: GetHeroCursorHit (C++ Helper)를 활용하여, 캐릭터가 보는 방향이 아닌 마우스 커서 방향으로 구르도록 만들었습니다.
-- 면역 & 쿨타임: 회피 중 State.Immunity (면역) 태그를 부여하고, 5초의 쿨타임을 적용했습니다.
-3. Q 스킬 (뇌명) 구현
-- 콤보 재사용: 평타와 같은 Combo 시스템을 상속받아 4단 콤보 스킬을 쉽게 구현했습니다.
-- 슈퍼 아머: 스킬 시전 시 State.SuperArmor를 부여하고, 종료 시(EndAbility) C++에서 자동으로 제거되도록 안전장치를 마련했습니다.
-- 비용 & 쿨타임: 마나 소모와 쿨타임이 정상적으로 적용되도록 GAS 설정을 바로잡았습니다.
-4. 핵심 버그 해결 (트러블슈팅)
-- 입력 충돌 해결: 컨트롤러(PlayerController)와 GAS(HeroComponent)가 좌클릭 입력을 두고 싸우던 문제를 해결했습니다. (컨트롤러 이동 로직 제거 및 InputID 할당)
-- 데이터 꼬임 해결: InputConfig, PawnData의 매핑 오류를 찾아내고, InputID를 동적 할당하여 Q와 평타가 뒤바뀌는 현상을 완벽히 고쳤습니다.
-- 비용(Cost) 문제 해결: CostMap이 비어있으면 비용을 쓰지 않도록 C++ 코드를 수정하여, 평타 사용 시 마나가 닳는 문제를 영구적으로 방지했습니다.
-- 이동 버벅임 해결: 스킬 사용 시 StopMovement를 호출하여 이전 이동 명령과 충돌하지 않도록 했습니다.
+W / 즉시 발동, 적에게 받피증 디버프(GE_DamageAmp) 부여.
+D / 자신에게 쉴드(GE_Shield) 및 도트 딜 오라 부여.
+A / C++ `RotateToCursor` 구현으로 마우스 방향 회전 후 돌진. 루트 모션 활용.
+E / C++ `AMyAoEActor` 제작. 마우스 위치(GetHeroCursorHit)에 장판 소환. 
+
+    ExposeOnSpawn으로 지속시간/데미지 동적 제어.
+R / 공중 콤보 구현. C++ `LaunchAvatarCharacter` & `SetGravityScale`로 물리적인 도약과 강습(찍기) 구현.
+S / Wait Input Release를 활용해 키를 누르는 동안만 스킬 유지.
+F / C++ `UGameplayAbility_Charge` 제작. GetRealTimeSeconds로 정확한 차징 시간 계산. 2초 이상 차징 시 데미지     2배 분기 처리
+
+[부가적으로 완료한 내용]
+ * AttributeSet 고도화: Damage 메타 속성 추가 및 DamageScale(피증 시너지) 반영.
+ * 피격 로직 구현: 공격자의 태그를 분석하여 경직 없음/약경직/넉백/다운/스턴을 구분하고 이벤트를 쏘는 C++ 기반 마련.
+ * 유연한 설계: 태그 유무에 따라 보스의 공격이 플레이어를 멈추게 할지, 데미지만 줄지 결정할 수 있는 체계 구축.
 
 [오늘 할 일]
 
-1. GA_Skill_ WERASDF V 구현
+1. 보스몬스터 기초 마련
+2. 플레이어 스킬 collision, 판정 구현

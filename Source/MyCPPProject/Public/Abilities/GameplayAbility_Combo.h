@@ -20,6 +20,7 @@ struct FMyComboStep
 	TObjectPtr<UAnimMontage> Montage = nullptr;
 
 	// 이 단계의 공격력 배율 (1.0 = 100%, 1.5 = 150%)
+	// 작동x 일단 표기
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float DamageMultiplier = 1.0f;
 };
