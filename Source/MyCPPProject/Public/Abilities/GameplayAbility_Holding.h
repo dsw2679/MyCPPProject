@@ -61,6 +61,9 @@ virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplay
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
 	FName EndSection = FName("End");
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings")
+	FGameplayTag HitGameplayCueTag;
+	
 	FTimerHandle DamageTimerHandle;
 	FTimerHandle DurationTimerHandle;
 

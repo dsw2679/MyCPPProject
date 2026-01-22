@@ -126,8 +126,27 @@ void UGameplayAbility_Holding::OnTickDamage()
 			{
 				// SetByCaller로 데미지 수치 전달
 				SpecHandle.Data.Get()->SetSetByCallerMagnitude(DamageEventTag, FinalDamage);
+				
+				if (HitGameplayCueTag.IsValid())
+				{
+					SpecHandle.Data.Get()->AddDynamicAssetTag(HitGameplayCueTag);
+				}
 
 				SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+				
+				if (HitGameplayCueTag.IsValid())
+				{
+					FGameplayCueParameters CueParams;
+
+					// 광역 공격이므로, 맞은 적의 발밑이나 가슴 높이 위치를 지정합니다.
+					// 여기서는 맞은 적의 현재 위치를 사용합니다.
+					CueParams.Location = HitActor->GetActorLocation();
+					CueParams.Instigator = GetAvatarActorFromActorInfo();
+					CueParams.EffectCauser = GetAvatarActorFromActorInfo();
+
+					// 이펙트 실행
+					SourceASC->ExecuteGameplayCue(HitGameplayCueTag, CueParams);
+				}
 			}
 		}
 	}

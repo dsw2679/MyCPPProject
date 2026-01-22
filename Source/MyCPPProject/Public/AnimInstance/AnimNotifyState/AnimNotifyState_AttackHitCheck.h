@@ -54,7 +54,7 @@ protected:
 	
 	// 디버그 드로잉 여부
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-	bool bDrawDebug = true;
+	bool bDrawDebug = false;
 
 	// 적용할 GameplayEffect 클래스 (데미지용)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
@@ -67,6 +67,10 @@ protected:
 	// 데미지 수치를 구분할 태그 (보통 Data.Damage 같은 태그 사용)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
 	FGameplayTag DamageEventTag;
+	
+	// 타격 성공 시 재생할 GameplayCue 태그
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
+	FGameplayTag HitGameplayCueTag;
 
 	// 추가로 적용할 GE 목록 (디버프, 상태이상 등)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")

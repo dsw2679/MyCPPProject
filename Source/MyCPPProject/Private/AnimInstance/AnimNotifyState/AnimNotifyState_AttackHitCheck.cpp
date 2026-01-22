@@ -10,6 +10,7 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 #include "Advanced/MyAttributeSet.h"
+#include "GameplayEffect.h"
 
 
 UAnimNotifyState_AttackHitCheck::UAnimNotifyState_AttackHitCheck()
@@ -118,8 +119,29 @@ void UAnimNotifyState_AttackHitCheck::NotifyTick(USkeletalMeshComponent* MeshCom
 
 						float FinalDamage = BaseAttackPower * DamageMultiplier;
 						SpecHandle.Data.Get()->SetSetByCallerMagnitude(DamageEventTag, FinalDamage);
+						
+						if (HitGameplayCueTag.IsValid())
+						{
+							// 이펙트 명세서(Spec)에 "이 태그에 해당하는 큐를 재생해라"라고 추가
+							SpecHandle.Data.Get()->AddDynamicAssetTag(HitGameplayCueTag);
+						}
 
 						SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+						
+						if (HitGameplayCueTag.IsValid())
+						{
+							FGameplayCueParameters CueParams;
+							CueParams.Location = Hit.Location;
+							CueParams.Normal = Hit.Normal;
+							CueParams.Instigator = OwnerActor;
+							CueParams.EffectCauser = OwnerActor;
+							CueParams.SourceObject = OwnerActor;
+							// 필요하면 HitResult 전체 복사
+							CueParams.EffectContext = Context;
+						
+							// 즉시 실행 (Instant)
+							SourceASC->ExecuteGameplayCue(HitGameplayCueTag, CueParams);
+						}
 						
 						// 부가 효과(디버프) 적용 
 						for (const TSubclassOf<UGameplayEffect>& BuffEffectClass : AdditionalGameplayEffects)
