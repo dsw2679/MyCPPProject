@@ -152,22 +152,27 @@ kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 �
 
 [어제 한 일]
 
-W / 즉시 발동, 적에게 받피증 디버프(GE_DamageAmp) 부여.
-D / 자신에게 쉴드(GE_Shield) 및 도트 딜 오라 부여.
-A / C++ `RotateToCursor` 구현으로 마우스 방향 회전 후 돌진. 루트 모션 활용.
-E / C++ `AMyAoEActor` 제작. 마우스 위치(GetHeroCursorHit)에 장판 소환. 
-
-    ExposeOnSpawn으로 지속시간/데미지 동적 제어.
-R / 공중 콤보 구현. C++ `LaunchAvatarCharacter` & `SetGravityScale`로 물리적인 도약과 강습(찍기) 구현.
-S / Wait Input Release를 활용해 키를 누르는 동안만 스킬 유지.
-F / C++ `UGameplayAbility_Charge` 제작. GetRealTimeSeconds로 정확한 차징 시간 계산. 2초 이상 차징 시 데미지     2배 분기 처리
-
-[부가적으로 완료한 내용]
- * AttributeSet 고도화: Damage 메타 속성 추가 및 DamageScale(피증 시너지) 반영.
- * 피격 로직 구현: 공격자의 태그를 분석하여 경직 없음/약경직/넉백/다운/스턴을 구분하고 이벤트를 쏘는 C++ 기반 마련.
- * 유연한 설계: 태그 유무에 따라 보스의 공격이 플레이어를 멈추게 할지, 데미지만 줄지 결정할 수 있는 체계 구축.
+1. 보스 몬스터 기초 마련
+    - AModularCharacter를 상속받은 AMyBossCharacter 생성 및 배치.
+    - AModularAIController를 상속받은 AMyBossAIController 연결.
+    - GAS 시스템(ASC, AttributeSet) 연동 및 초기화 완료.
+2. 전투 및 타격 시스템 구현
+    - 판정 시스템 (Hit Check): AnimNotifyState_AttackHitCheck를 C++로 구현하여 구체(Sphere), 부채꼴(Cone), 광역(Radial) 판정 모드를 모두 지원하도록 확장.
+    - 데미지 로직: SetByCaller를 활용하여 공격력 스탯 기반 데미지 계산 및 전달 로직 완성.
+    - 부가 효과 (Buff/Debuff): 스킬 적중 시 GE_DamageAmp(받는 피해 증가) 등 추가 이펙트를 자동 적용하는 시스템 구축.
+    - 홀딩 스킬 (S): GameplayAbility_HoldAoE 클래스를 제작하여 타이머 기반의 주기적 데미지와 섹션 점프 로직 구현.
+3. 타격감 및 이펙트 (VFX)
+    - Paragon Kwang 에셋 활용: Cascade 파티클을 Niagara로 변환하거나 GameplayCueNotify를 통해 재생하는 방법 습득.
+    - GameplayCue 시스템: ExecuteGameplayCue를 사용하여 타격 시점과 위치에 정확하게 이펙트(Impact)를 터트리는 정석적인 타격감 로직 완성.
 
 [오늘 할 일]
 
-1. 보스몬스터 기초 마련
-2. 플레이어 스킬 collision, 판정 구현
+additional : 스킬 wer asdf 이펙트 어느정도 마무리 지어야함
+
+1. 보스 체력바 UI :
+    - 때릴 때마다 줄어드는 체력바와 데미지 플로팅 텍스트(Damage Number)를 띄워 타격감을 완성합니다.
+    - Lyra의 UIExtension을 활용하거나 위젯 컴포넌트로 부착합니다.
+2. 보스 무력화(Groggy) 시스템:
+    - 스킬 적중 시 깎이는 Stagger 게이지를 시각화하고, 0이 되면 보스가 그로기 상태(애니메이션 재생 & 방어력 감소)에 빠지는 기믹을 구현합니다.
+3. 보스 AI (패턴 1):
+    - 샌드백을 졸업하고, 보스가 플레이어를 향해 걸어오거나 평타를 휘두르는 첫 번째 Behavior Tree를 작성합니다.
