@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "MyCPPProjectPlayerController.h"
+
+#include "CommonActivatableWidget.h"
 #include "GameFramework/Pawn.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "NiagaraSystem.h"
@@ -13,6 +15,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "MyCPPProject.h"
+#include "PrimaryGameLayout.h"
+#include "Blueprint/UserWidget.h"
+#include "Advanced/MyPrimaryGameLayout.h"
 
 AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 {
@@ -44,36 +49,30 @@ void AMyCPPProjectPlayerController::SetupInputComponent()
 {
 	// set up gameplay key bindings
 	Super::SetupInputComponent();
+	
+}
 
-	// // Only set up input on local player controllers
-	// if (IsLocalPlayerController())
-	// {
-	// 	// Add Input Mapping Context
-	// 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
-	// 	{
-	// 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
-	// 	}
-	//
-	// 	// Set up action bindings
-	// 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
-	// 	{
-	// 		// Setup mouse input events
-	// 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Started, this, &AMyCPPProjectPlayerController::OnInputStarted);
-	// 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Triggered, this, &AMyCPPProjectPlayerController::OnSetDestinationTriggered);
-	// 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &AMyCPPProjectPlayerController::OnSetDestinationReleased);
-	// 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &AMyCPPProjectPlayerController::OnSetDestinationReleased);
-	// 		
-	// 		// Setup touch input events
-	// 		EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Started, this, &AMyCPPProjectPlayerController::OnInputStarted);
-	// 		EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Triggered, this, &AMyCPPProjectPlayerController::OnTouchTriggered);
-	// 		EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Completed, this, &AMyCPPProjectPlayerController::OnTouchReleased);
-	// 		EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Canceled, this, &AMyCPPProjectPlayerController::OnTouchReleased);
-	// 	}
-	// 	else
-	// 	{
-	// 		UE_LOG(LogMyCPPProject, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
-	// 	}
-	// }
+void AMyCPPProjectPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	if (IsLocalController() && PrimaryLayoutClass)
+	{
+		// 레이아웃 생성 및 뷰포트 추가
+		UPrimaryGameLayout* RootLayout = CreateWidget<UPrimaryGameLayout>(this, PrimaryLayoutClass);
+		RootLayout->AddToPlayerScreen(0);
+
+		// HUD를 Game 레이어에 Push
+		if (HUDWidgetClass)
+		{
+			// 태그로 스택 찾아서 Push
+			RootLayout->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(
+				FGameplayTag::RequestGameplayTag("UI.Layer.Game"),
+				false,
+				HUDWidgetClass
+			);
+		}
+	}
 }
 
 void AMyCPPProjectPlayerController::OnInputStarted()

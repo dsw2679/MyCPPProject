@@ -63,6 +63,11 @@ public:
 	FGameplayAttributeData Stagger;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, Stagger)
 	
+	// 무력화 게이지
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData MaxStagger;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, MaxStagger)
+	
 	// 피증 시너지
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	FGameplayAttributeData DamageScale;

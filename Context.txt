@@ -171,7 +171,7 @@ additional : 스킬 wer asdf 이펙트 어느정도 마무리 지어야함
 
 1. 보스 체력바 UI :
     - 때릴 때마다 줄어드는 체력바와 데미지 플로팅 텍스트(Damage Number)를 띄워 타격감을 완성합니다.
-    - Lyra의 UIExtension을 활용하거나 위젯 컴포넌트로 부착합니다.
+    - Lyra의 CommonUI, UIExtension을 활용합니다.
 2. 보스 무력화(Groggy) 시스템:
     - 스킬 적중 시 깎이는 Stagger 게이지를 시각화하고, 0이 되면 보스가 그로기 상태(애니메이션 재생 & 방어력 감소)에 빠지는 기믹을 구현합니다.
 3. 보스 AI (패턴 1):

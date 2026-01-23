@@ -61,6 +61,18 @@ protected:
 	/** Time that the click input has been pressed */
 	float FollowTime = 0.0f;
 
+	// 전체 UI 레이어 구조를 담당하는 클래스 (WBP_MyPrimaryLayout)
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UPrimaryGameLayout> PrimaryLayoutClass;
+
+	// Game 레이어에 띄울 메인 HUD 클래스 (WBP_MyHUDLayout)
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSoftClassPtr<class UCommonActivatableWidget> HUDWidgetClass; // PushAsync를 위해 Soft Class 추천
+
+	// 생성된 루트 레이아웃 인스턴스 보관용
+	UPROPERTY()
+	TObjectPtr<class UPrimaryGameLayout> RootLayoutInstance;
+
 public:
 
 	/** Constructor */
@@ -73,6 +85,8 @@ protected:
 
 	/** Initialize input bindings */
 	virtual void SetupInputComponent() override;
+	
+	virtual void BeginPlay() override;
 	
 	/** Input handlers */
 	void OnInputStarted();

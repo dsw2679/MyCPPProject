@@ -9,6 +9,7 @@
 
 class UAbilitySystemComponent;
 class UAttributeSet;
+class UGameplayEffect;
 
 /**
  * 
@@ -32,4 +33,7 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UAttributeSet> AttributeSet;
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayEffect> InitStatEffect;
 };
