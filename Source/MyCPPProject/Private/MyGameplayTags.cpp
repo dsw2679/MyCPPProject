@@ -2,19 +2,13 @@
 
 
 #include "MyGameplayTags.h"
-#include "GameplayTagsManager.h"
 
-FMyGameplayTags FMyGameplayTags::GameplayTags;
 
-void FMyGameplayTags::InitializeNativeTags()
+namespace MyGameplayTags
 {
-	UGameplayTagsManager& Manager = UGameplayTagsManager::Get();
-	GameplayTags.AddAllTags(Manager);
-}
-
-void FMyGameplayTags::AddAllTags(UGameplayTagsManager& Manager)
-{
-	// 실제 태그 문자열 정의 
-	Message_Boss_Spawned = Manager.AddNativeGameplayTag(FName("Message.Boss.Spawned"), TEXT("보스 등장 메시지"));
-	Message_Boss_Dead = Manager.AddNativeGameplayTag(FName("Message.Boss.Dead"), TEXT("보스 사망 메시지"));
+	// 여기서 실제 문자열과 매칭하여 정의합니다.
+	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_Spawned, "Message.Boss.Spawned");
+	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_HealthChanged, "Message.Boss.HealthChanged");
+	UE_DEFINE_GAMEPLAY_TAG(Message_Request_BossInfo, "Message.Request.BossInfo");
+	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_Dead, "Message.Boss.Dead");
 }

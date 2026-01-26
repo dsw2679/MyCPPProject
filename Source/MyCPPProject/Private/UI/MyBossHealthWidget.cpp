@@ -32,6 +32,7 @@ void UMyBossHealthWidget::SetAbilitySystemComponent(UAbilitySystemComponent* InA
 
 void UMyBossHealthWidget::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[UI] OnHealthChanged! NewHealth: %f"), Data.NewValue);
 	float MaxHealth = AbilitySystemComponent->GetNumericAttribute(UMyAttributeSet::GetMaxHealthAttribute());
 	UpdateHealth(Data.NewValue, MaxHealth);
 }
@@ -57,8 +58,17 @@ void UMyBossHealthWidget::OnMaxStaggerChanged(const FOnAttributeChangeData& Data
 void UMyBossHealthWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	// 메시지 리스너 등록 
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(this);
-	BossSpawnListenerHandle = MessageSubsystem.RegisterListener(FMyGameplayTags::Get().Message_Boss_Spawned, this, &UMyBossHealthWidget::OnBossSpawned);
+	
+	// 보스 스폰 메시지
+	MessageSubsystem.RegisterListener(MyGameplayTags::Message_Boss_Spawned, this, &ThisClass::OnBossSpawned);
+	
+	// 체력 변경 메시지
+	MessageSubsystem.RegisterListener(MyGameplayTags::Message_Boss_HealthChanged, this, &ThisClass::OnHealthMessageReceived);
+	
+	UE_LOG(LogTemp, Warning, TEXT("[UI] NativeConstruct: Waiting for Boss Message..."));
 	
 	// 처음에 안 보이게 숨김 (보스 나올 때까지)
 	//SetVisibility(ESlateVisibility::Collapsed);
@@ -71,6 +81,7 @@ void UMyBossHealthWidget::NativeDestruct()
 	{
 		UGameplayMessageSubsystem::Get(this).UnregisterListener(BossSpawnListenerHandle);
 	}
+	UE_LOG(LogTemp, Warning, TEXT("[UI] NativeDestruct(): "));
 	Super::NativeDestruct();
 }
 
@@ -80,7 +91,12 @@ void UMyBossHealthWidget::OnBossSpawned(FGameplayTag Channel, const FMyBossMessa
 	{
 		// 아까 만든 설정 함수 호출
 		SetAbilitySystemComponent(Payload.BossASC);
-		// UI 짠! 하고 보여주기
+		// UI 보여주기
 		SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
+}
+
+void UMyBossHealthWidget::OnHealthMessageReceived(FGameplayTag Channel, const FMyBossHealthMessage& Payload)
+{
+	UpdateHealth(Payload.CurrentHealth, Payload.MaxHealth);
 }

@@ -9,6 +9,7 @@
 #include "Message/MyBossMessageStruct.h"
 #include "MyBossHealthWidget.generated.h"
 
+
 class UAbilitySystemComponent;
 
 /**
@@ -36,6 +37,12 @@ protected:
 	void OnBossSpawned(FGameplayTag Channel, const FMyBossMessageStruct& Payload);
 
 	FGameplayMessageListenerHandle BossSpawnListenerHandle;
+	
+	// 메시지 수신 시 호출될 함수
+	void OnHealthMessageReceived(FGameplayTag Channel, const FMyBossHealthMessage& Payload);
+
+	// 리스너 핸들 관리
+	FGameplayMessageListenerHandle HealthChangedListenerHandle;
 	// 블루프린트에서 실제 UI를 갱신할 때 사용
 	UFUNCTION(BlueprintImplementableEvent, Category = "BossUI")
 	void UpdateHealth(float CurrentHealth, float MaxHealth);

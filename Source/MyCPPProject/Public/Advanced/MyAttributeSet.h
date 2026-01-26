@@ -20,6 +20,8 @@ class MYCPPPROJECT_API UMyAttributeSet : public UAttributeSet
 public:
 	UMyAttributeSet();
 	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 
 	// GameplayEffect가 실행된 후 처리 (데미지, 힐링 등 실제 적용 후)
@@ -36,47 +38,74 @@ protected:
 	
 public:
 	// 체력 관련
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Attributes")
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, Health)
+	
+	UFUNCTION()
+	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category = "Attributes")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, MaxHealth)
+	
+	UFUNCTION()
+	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
 
 	// 마나 관련
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MP, Category = "Attributes")
 	FGameplayAttributeData MP;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, MP)
+	
+	UFUNCTION()
+	virtual void OnRep_MP(const FGameplayAttributeData& OldMP);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxMP, Category = "Attributes")
 	FGameplayAttributeData MaxMP;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, MaxMP)
+	
+	UFUNCTION()
+	virtual void OnRep_MaxMP(const FGameplayAttributeData& OldMaxMP);
 
 	// 아이덴티티 게이지
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_IdentityGage, Category = "Attributes")
 	FGameplayAttributeData IdentityGage;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, IdentityGage)
+	
+	UFUNCTION()
+	virtual void OnRep_IdentityGage(const FGameplayAttributeData& OldIdentityGage);
 
 	// 무력화 게이지
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Stagger, Category = "Attributes")
 	FGameplayAttributeData Stagger;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, Stagger)
 	
-	// 무력화 게이지
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UFUNCTION()
+	virtual void OnRep_Stagger(const FGameplayAttributeData& OldStagger);
+	
+	// 최대 무력화 게이지
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxStagger, Category = "Attributes")
 	FGameplayAttributeData MaxStagger;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, MaxStagger)
 	
+	UFUNCTION()
+	virtual void OnRep_MaxStagger(const FGameplayAttributeData& OldMaxStagger);
+	
 	// 피증 시너지
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_DamageScale, Category = "Attributes")
 	FGameplayAttributeData DamageScale;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, DamageScale)
 	
+	UFUNCTION()
+	virtual void OnRep_DamageScale(const FGameplayAttributeData& OldDamageScale);
+	
 	// 플레이어 공격력
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_AttackPower, Category = "Attributes")
 	FGameplayAttributeData AttackPower;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, AttackPower)
+	
+	UFUNCTION()
+	virtual void OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower);
 	
 	// 들어오는 데미지 값을 임시로 저장하는 메타 속성
 	UPROPERTY(BlueprintReadOnly, Category = "Lyra|Health", Meta = (AllowPrivateAccess = true))

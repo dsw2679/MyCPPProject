@@ -26,3 +26,15 @@ struct FMyBossMessageStruct
 	UPROPERTY(BlueprintReadWrite, Category = "Boss")
 	TObjectPtr<UAbilitySystemComponent> BossASC = nullptr;
 };
+
+USTRUCT(BlueprintType)
+struct FMyBossHealthMessage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Boss")
+	float CurrentHealth = 0.0f;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Boss")
+	float MaxHealth = 0.0f;
+};

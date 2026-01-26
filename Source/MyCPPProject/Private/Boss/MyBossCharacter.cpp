@@ -9,17 +9,20 @@
 #include "Message/MyBossMessageStruct.h"
 #include "NativeGameplayTags.h"
 #include "MyGameplayTags.h"
+#include "NiagaraSystem.h"
+#include "Experience/MyPawnData.h"
 
 AMyBossCharacter::AMyBossCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
 
 	// GAS 컴포넌트 생성
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
-	// AttributeSet은 필요에 따라 생성 (보통 ASC 초기화 시점에 함께 처리하거나 여기서 생성)
+	// AttributeSet
 	AttributeSet = CreateDefaultSubobject<UMyAttributeSet>(TEXT("AttributeSet"));
 }
 
@@ -30,9 +33,9 @@ UAbilitySystemComponent* AMyBossCharacter::GetAbilitySystemComponent() const
 
 void AMyBossCharacter::BeginPlay()
 {
-	FMyGameplayTags::InitializeNativeTags();
 	Super::BeginPlay();
-
+	PreloadAssets();
+	
 	if (AbilitySystemComponent)
 	{
 		// AI 컨트롤러가 빙의된 상태라면 InitAbilityActorInfo 호출
@@ -53,20 +56,77 @@ void AMyBossCharacter::BeginPlay()
 			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		}
 	}
+}
 
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+void AMyBossCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	//구독해제
+	UGameplayMessageSubsystem::Get(this).UnregisterListener(BossInfoRequestListenerHandle);
+	Super::EndPlay(EndPlayReason);
+}
+
+void AMyBossCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	// GAS 초기화
+	if (AbilitySystemComponent)
 	{
-		if (IsValid(this))
-		{
-			FMyBossMessageStruct Message;
-			Message.Verb = FMyGameplayTags::Get().Message_Boss_Spawned;
-			Message.BossActor = this;
-			Message.BossASC = this->GetAbilitySystemComponent();
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
 
-			// 싱글톤 Get()을 안전하게 호출
-			UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(this);
-			MessageSubsystem.BroadcastMessage(Message.Verb, Message);
+	// 메시지 방송
+	FMyBossMessageStruct Message;
+	Message.BossActor = this;
+	Message.BossASC = this->GetAbilitySystemComponent();
+	
+	UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Boss_Spawned, Message);
+
+	UE_LOG(LogTemp, Warning, TEXT("[Boss] PossessedBy: Broadcasted Spawn Message!"));
+}
+
+void AMyBossCharacter::PreloadAssets()
+{
+	if (!PawnData) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("[Boss] Starting Preload for %s"), *GetName());
+
+	// 1. VFX(Niagara) 프리로드
+	for (auto VFX : PawnData->PreloadVFX)
+	{
+		if (VFX) {
+			// 실제 사용은 안 하지만 포인터를 참조함으로써 메모리에 로드 상태 유지
+			UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded VFX: %s"), *VFX->GetName());
 		}
-	}, 0.2f, false);
+	}
+
+	// 2. SFX(Sound) 프리로드
+	for (auto SFX : PawnData->PreloadSFX)
+	{
+		if (SFX) {
+			UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded SFX: %s"), *SFX->GetName());
+		}
+	}
+
+	// 3. GameplayCues 프리로드 (클래스 로딩)
+	for (auto CueClass : PawnData->PreloadGameplayCues)
+	{
+		if (CueClass) {
+			// 클래스 디폴트 객체(CDO)를 참조하여 로드 보장
+			CueClass->GetDefaultObject();
+			UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded Cue: %s"), *CueClass->GetName());
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[Boss] Preload Complete!"));
+}
+
+void AMyBossCharacter::OnBossInfoRequested(FGameplayTag Channel, const struct FMyBossMessageStruct& Payload)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[Boss] RECEIVED REQUEST from UI! Sending Response..."));
+	
+	FMyBossMessageStruct Message;
+	Message.BossActor = this;
+	Message.BossASC = this->GetAbilitySystemComponent();
+
+	UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Request_BossInfo, Message);
 }

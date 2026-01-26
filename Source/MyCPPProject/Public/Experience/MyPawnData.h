@@ -57,6 +57,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Visuals")
 	TObjectPtr<UNiagaraSystem> MovementClickEffect;
 	
+	// 프리로드할 이펙트 리스트
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Visuals")
+	TArray<TObjectPtr<UNiagaraSystem>> PreloadVFX;
+
+	// 프리로드할 사운드 리스트
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Audio")
+	TArray<TObjectPtr<USoundBase>> PreloadSFX;
+	
+	// 프리로드할 GameplayCue 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Visuals")
+	TArray<TSoftClassPtr<UObject>> PreloadGameplayCues;
+	
 	// 게임 시작 시 적용할 GameplayEffect 목록 (스텟 초기화 등)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Abilities")
 	TArray<TSubclassOf<UGameplayEffect>> StartupGameplayEffects;

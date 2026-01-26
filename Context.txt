@@ -9,7 +9,7 @@ CommonGame, CommonUser, GamePlayMessageRouter가 있음. gamefeature의 경우 �
 
 [현재 보유 에셋]
 보스 몬스터 : Contents/ParagonSevarog
-Sevarog 보유 모션 ( Cast, Emote_Pointing_MC_T3, Emote_pull_MC_T1, Speedburst, Soul_Siphon, Subjugation, Swing1, Swing2,  Swing3, Ultimate_Swing)
+Sevarog 보유 모션 ( (일반)Cast, (특수)Emote_Pointing_MC_T3, (보스와 일정거리 이상 멀어지면)Emote_pull_MC_T1, (일반)Speedburst, (특수)Soul_Siphon, (특수)Subjugation, (일반콤보)Swing1, Swing2,  Swing3, (플레이어 다운시)Ultimate_Swing)
 
 플레이어 : Contents/ParagonKwang
 kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 쥐며 힘모으기, 평타a, 평타b, 평타c, 평타d, 귀환)
@@ -152,22 +152,23 @@ kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 �
 
 [어제 한 일]
 
-1. 보스 몬스터 기초 마련
-    - AModularCharacter를 상속받은 AMyBossCharacter 생성 및 배치.
-    - AModularAIController를 상속받은 AMyBossAIController 연결.
-    - GAS 시스템(ASC, AttributeSet) 연동 및 초기화 완료.
-2. 전투 및 타격 시스템 구현
-    - 판정 시스템 (Hit Check): AnimNotifyState_AttackHitCheck를 C++로 구현하여 구체(Sphere), 부채꼴(Cone), 광역(Radial) 판정 모드를 모두 지원하도록 확장.
-    - 데미지 로직: SetByCaller를 활용하여 공격력 스탯 기반 데미지 계산 및 전달 로직 완성.
-    - 부가 효과 (Buff/Debuff): 스킬 적중 시 GE_DamageAmp(받는 피해 증가) 등 추가 이펙트를 자동 적용하는 시스템 구축.
-    - 홀딩 스킬 (S): GameplayAbility_HoldAoE 클래스를 제작하여 타이머 기반의 주기적 데미지와 섹션 점프 로직 구현.
-3. 타격감 및 이펙트 (VFX)
-    - Paragon Kwang 에셋 활용: Cascade 파티클을 Niagara로 변환하거나 GameplayCueNotify를 통해 재생하는 방법 습득.
-    - GameplayCue 시스템: ExecuteGameplayCue를 사용하여 타격 시점과 위치에 정확하게 이펙트(Impact)를 터트리는 정석적인 타격감 로직 완성.
+1. UI 시스템 아키텍처 구축
+    - PrimaryGameLayout 도입: 단순히 뷰포트에 위젯을 붙이는 방식을 버리고, Game, GameMenu, Modal 등 레이어(Layer)를 관리하는 최상위 레이아웃 시스템을 구축했습니다.
+    - Layer Push 방식 적용: PlayerController에서 직접 위젯을 생성하지 않고, PushWidgetToLayerStackAsync를 통해 HUD를 게임 레이어에 안전하게 삽입하는 구조를 완성했습니다.
+2. 보스 체력바 (Boss Health Bar) 구현
+    - C++ 로직 (`UMyBossHealthWidget`): CommonUserWidget을 상속받아 GAS의 AttributeSet(체력, 무력화) 변화를 감지하고 UI를 갱신하는 로직을 작성했습니다.
+    - 블루프린트 디자인 (`WBP_BossHealthBar`): 붉은색 체력바를 디자인하고 HUD 내에 배치했습니다.
+    - 메시징 시스템 (`GameplayMessageSubsystem`): 보스와 UI 간의 직접 참조(결합)를 끊기 위해, 보스 스폰 시 " 메시지를 방송하고 UI가 이를 수신하여 활성화되는 느슨한 결합(Decoupling) 구조를 구현했습니다.
+3. 데이터 및 태그 관리
+    - 싱글톤 태그 관리 (`FMyGameplayTags`): UE_DEFINE_GAMEPLAY_TAG_STATIC의 남발을 막고, 프로젝트 전체의 네이티브 태그를 한곳에서 관리하는 싱글톤 클래스를 도입하여 유지보수성을 높였습니다.
+4. 트러블슈팅 (문제 해결)
+    - HUD 미표시 문제: CommonActivatableWidget의 특성(스택 필요)을 파악하고 레이아웃 시스템을 도입하여 해결했습니다.
+    - 체력바 미표시 문제: "미리 배치된 보스"와 "UI 생성" 사이의 타이밍 이슈(Race Condition)를 파악하고 디버깅하여 해결책을 찾았습니다.
+5. 플레이어 스킬 이펙트, 애니메이션 마무리
+- GA_Skill_Q~F 까지 총 8가지 스킬의 애니메이션, 이펙트, 데미지 판정에 대한 구현을 마쳤습니다.
 
 [오늘 할 일]
 
-additional : 스킬 wer asdf 이펙트 어느정도 마무리 지어야함
 
 1. 보스 체력바 UI :
     - 때릴 때마다 줄어드는 체력바와 데미지 플로팅 텍스트(Damage Number)를 띄워 타격감을 완성합니다.

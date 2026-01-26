@@ -4,10 +4,30 @@
 #include "Advanced/MyAttributeSet.h"
 #include "GameplayEffectExtension.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "MyGameplayTags.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
+#include "Message/MyBossMessageStruct.h"
+#include "Net/UnrealNetwork.h"
 
 UMyAttributeSet::UMyAttributeSet()
 {
 	InitDamageScale(1.0f);
+}
+
+void UMyAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	// DOREPLIFETIME_CONDITION_NOTIFY: 값이 바뀔 때만 전송하고, 클라이언트에서 OnRep를 호출함
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MP, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MaxMP, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, IdentityGage, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, Stagger, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MaxStagger, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, DamageScale, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
 }
 
 void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -63,6 +83,25 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 			const float OldHealth = GetHealth();
 			const float NewHealth = FMath::Clamp(OldHealth - FinalDamage, 0.0f, GetMaxHealth());
 			SetHealth(NewHealth);
+			
+			// FGameplayTag MyTag = FMyGameplayTags::Get().Message_Boss_HealthChanged;
+			//
+			// // 로그에 태그 이름이 나오는지 확인
+			// UE_LOG(LogTemp, Warning, TEXT("[ABS] Debug Tag Name: %s"), *MyTag.ToString());
+			//
+			// if (!MyTag.IsValid())
+			// {
+			// 	UE_LOG(LogTemp, Error, TEXT("[ABS] Critical: Tag is NOT VALID (None)!"));
+			// }
+			
+			// 체력 변경 메시지 방송
+			FMyBossHealthMessage HealthMsg;
+			HealthMsg.CurrentHealth = NewHealth;
+			HealthMsg.MaxHealth = GetMaxHealth();
+
+			UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
+			UGameplayMessageSubsystem::Get(this).BroadcastMessage(MyGameplayTags::Message_Boss_HealthChanged, HealthMsg);
+			
 			
 			// 데미지 로그
 			AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
@@ -147,4 +186,49 @@ void UMyAttributeSet::AdjustAttributeForMaxChange(FGameplayAttributeData& Affect
 
 		AbilityComp->ApplyModToAttributeUnsafe(AffectedAttributeProperty, EGameplayModOp::Additive, NewDelta);
 	}
+}
+
+void UMyAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, Health, OldHealth);
+}
+
+void UMyAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MaxHealth, OldMaxHealth);
+}
+
+void UMyAttributeSet::OnRep_MP(const FGameplayAttributeData& OldMP)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MP, OldMP);
+}
+
+void UMyAttributeSet::OnRep_MaxMP(const FGameplayAttributeData& OldMaxMP)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MaxMP, OldMaxMP);
+}
+
+void UMyAttributeSet::OnRep_IdentityGage(const FGameplayAttributeData& OldIdentityGage)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, IdentityGage, OldIdentityGage);
+}
+
+void UMyAttributeSet::OnRep_Stagger(const FGameplayAttributeData& OldStagger)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, Stagger, OldStagger);
+}
+
+void UMyAttributeSet::OnRep_MaxStagger(const FGameplayAttributeData& OldMaxStagger)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MaxStagger, OldMaxStagger);
+}
+
+void UMyAttributeSet::OnRep_DamageScale(const FGameplayAttributeData& OldDamageScale)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, DamageScale, OldDamageScale);
+}
+
+void UMyAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AttackPower, OldAttackPower);
 }

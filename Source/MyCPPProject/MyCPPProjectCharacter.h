@@ -12,6 +12,7 @@ class USpringArmComponent;
 class UAbilitySystemComponent;
 class UMyHeroComponent;
 class UMotionWarpingComponent;
+class UMyPawnData;
 
 /**
  *  A controllable top-down perspective character
@@ -43,6 +44,12 @@ protected:
 	// 히어로 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lyra|Hero")
 	TObjectPtr<UMyHeroComponent> HeroComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hero")
+	TObjectPtr<const UMyPawnData> PawnData;
+	
+	// 강제 로딩을 수행할 함수
+	void PreloadAssets();
 
 public:
 
