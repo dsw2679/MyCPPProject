@@ -16,7 +16,8 @@
 				"EnhancedInput",
 				"ModularGameplay",
 				"CoreUObject",
-				"CommonGame"
+				"CommonGame",
+				"AIModule"
 			]
 		}
 	],
