@@ -37,6 +37,9 @@ protected:
 	void Input_MoveToCursor(const FInputActionValue& InputActionValue);
 	void Input_Move_Triggered(const FInputActionValue& InputActionValue);
 	void Input_Move_Released(const FInputActionValue& InputActionValue);
+	
+	// 프리로드
+	void PreloadPawnAssets();
 
 	// 이동 관련 변수
 	FVector CachedDestination;

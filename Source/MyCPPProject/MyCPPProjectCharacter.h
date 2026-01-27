@@ -47,9 +47,7 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hero")
 	TObjectPtr<const UMyPawnData> PawnData;
-	
-	// 강제 로딩을 수행할 함수
-	void PreloadAssets();
+
 
 public:
 

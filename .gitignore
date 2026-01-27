@@ -12,6 +12,7 @@ Saved
 *.suo
 *.xcodeproj
 *.xcworkspace
+Builds/
 
 /Content/Cave_Ruins/
 /Content/ParagonKwang/

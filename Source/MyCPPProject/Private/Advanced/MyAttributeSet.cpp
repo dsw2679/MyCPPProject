@@ -98,7 +98,7 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 			FMyBossHealthMessage HealthMsg;
 			HealthMsg.CurrentHealth = NewHealth;
 			HealthMsg.MaxHealth = GetMaxHealth();
-
+			
 			UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
 			UGameplayMessageSubsystem::Get(this).BroadcastMessage(MyGameplayTags::Message_Boss_HealthChanged, HealthMsg);
 			
@@ -125,26 +125,25 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 				// 들어온 GE(공격)에 붙어있는 태그를 검사합니다.
 				FGameplayTagContainer SourceTags;
 				Data.EffectSpec.GetAllAssetTags(SourceTags); // GE에 설정된 태그 가져오기
-
+			
 				FGameplayTag EventTag;
-
+			
 				// 우선순위: 다운 > 넉백 > 헤비 > 라이트
-				if (SourceTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Hit.Stun"))))
+				if (SourceTags.HasTag(MyGameplayTags::Effect_Hit_Stun))
 				{
-					EventTag = FGameplayTag::RequestGameplayTag(FName("Effect.Hit.Stun"));
+					EventTag = MyGameplayTags::Effect_Hit_Stun;
 				}
-				else if (SourceTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Hit.Knockdown"))))
+				else if (SourceTags.HasTag(MyGameplayTags::Effect_Hit_Knockdown))
 				{
-					EventTag = FGameplayTag::RequestGameplayTag(FName("Effect.Hit.Knockdown"));
+					EventTag = MyGameplayTags::Effect_Hit_Knockdown;
 				}
-				else if (SourceTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Hit.Knockback"))))
+				else if (SourceTags.HasTag(MyGameplayTags::Effect_Hit_Knockback))
 				{
-					EventTag = FGameplayTag::RequestGameplayTag(FName("Effect.Hit.Knockback"));
+					EventTag = MyGameplayTags::Effect_Hit_Knockback;
 				}
-				else if (SourceTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Hit.Light"))))
+				else if (SourceTags.HasTag(MyGameplayTags::Effect_Hit_Light))
 				{
-					// 기본은 약한 경직
-					EventTag = FGameplayTag::RequestGameplayTag(FName("Effect.Hit.Light"));
+					EventTag = MyGameplayTags::Effect_Hit_Light;
 				}
 				
 				if (EventTag.IsValid())
@@ -162,7 +161,7 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 						KnockbackDir.Z = 0.0f; // 수평으로만 밀리게
 						Payload.ContextHandle = Data.EffectSpec.GetContext();
 					}
-
+				
 					UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(TargetActor, EventTag, Payload);
 				}
 			}

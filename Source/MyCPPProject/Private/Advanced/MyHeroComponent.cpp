@@ -70,12 +70,10 @@ void UMyHeroComponent::OnExperienceLoaded(const UMyExperienceDefinition* Experie
     {
         return;
     }
-    
-    
 
+    PreloadPawnAssets();
     APawn* Pawn = GetPawn<APawn>();
     if (!Pawn) return;
-    
     
     // 1. GAS 초기화 및 스킬 부여
     IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Pawn);
@@ -332,5 +330,55 @@ void UMyHeroComponent::Input_Move_Released(const FInputActionValue& InputActionV
 
     // 시간 초기화
     FollowTime = 0.0f;
+}
+
+void UMyHeroComponent::PreloadPawnAssets()
+{
+    if (!PawnData) return;
+
+    UE_LOG(LogTemp, Warning, TEXT("[Hero] Starting Preload for Player"));
+
+    // VFX 프리로드
+    for (auto VFX : PawnData->PreloadVFX)
+    {
+        if (VFX) UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded VFX: %s"), *VFX->GetName());
+    }
+
+    // SFX 프리로드
+    for (auto SFX : PawnData->PreloadSFX)
+    {
+        if (SFX) UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded SFX: %s"), *SFX->GetName());
+    }
+
+    // GameplayCue 프리로드 (LoadSynchronous 필수)
+    for (const TSoftClassPtr<UObject>& CueSoftClass : PawnData->PreloadGameplayCues)
+    {
+        if (!CueSoftClass.IsNull())
+        {
+            if (UClass* LoadedClass = CueSoftClass.LoadSynchronous())
+            {
+                LoadedClass->GetDefaultObject(); // CDO 생성으로 초기화 보장
+                UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded Cue: %s"), *LoadedClass->GetName());
+            }
+        }
+    }
+    
+    for (auto Montage : PawnData->PreloadMontages)
+    {
+        if (Montage)
+        {
+            // UE_LOG(LogTemp, Log, TEXT("Preloaded Montage: %s"), *Montage->GetName());
+        }
+    }
+    
+    for (const TSubclassOf<UGameplayEffect>& GEClass : PawnData->PreloadGameplayEffects)
+    {
+        if (GEClass)
+        {
+            // CDO(Class Default Object)를 가져와서 확실하게 초기화
+            GEClass->GetDefaultObject();
+            UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded GE: %s"), *GEClass->GetName());
+        }
+    }
 }
 

@@ -9,7 +9,18 @@ CommonGame, CommonUser, GamePlayMessageRouter가 있음. gamefeature의 경우 �
 
 [현재 보유 에셋]
 보스 몬스터 : Contents/ParagonSevarog
-Sevarog 보유 모션 ( (일반)Cast, (특수)Emote_Pointing_MC_T3, (보스와 일정거리 이상 멀어지면)Emote_pull_MC_T1, (일반)Speedburst, (특수)Soul_Siphon, (특수)Subjugation, (일반콤보)Swing1, Swing2,  Swing3, (플레이어 다운시)Ultimate_Swing)
+Sevarog 보유 모션 ( 
+(일반)Cast - 보스 전방에 장판 생성, 
+(일반)Clap - 3연장판,
+(일반)Launchpad - 주변데미지,
+(특수 체력 70%)Emote_Pointing_MC_T3 - 주변에 장판이 마구잡이로 생성, 
+(보스와 일정거리 이상 멀어지면 발동)Emote_pull_MC_T1 - 거리가 너무 멀어질시 강제로 플레이어가 보스앞으로 당겨와짐 , 
+(일반)Speedburst - 몸통박치기, 
+(특수 체력 40%)Soul_Siphon - 플레이어에게 저주, 
+(플레이어 다운시)Subjugation - 플레이어 발밑에 장판 생성, 
+(일반콤보)Swing1, Swing2,  Swing3 - 보스 일반 연계 콤보, 
+(특수 체력 10%)Ultimate_Swing - 타게팅하다 순식간에 다가와 플레이어를 날리는 공격을 함
+)
 
 플레이어 : Contents/ParagonKwang
 kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 쥐며 힘모으기, 평타a, 평타b, 평타c, 평타d, 귀환)
@@ -169,11 +180,4 @@ kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 �
 
 [오늘 할 일]
 
-
-1. 보스 체력바 UI :
-    - 때릴 때마다 줄어드는 체력바와 데미지 플로팅 텍스트(Damage Number)를 띄워 타격감을 완성합니다.
-    - Lyra의 CommonUI, UIExtension을 활용합니다.
-2. 보스 무력화(Groggy) 시스템:
-    - 스킬 적중 시 깎이는 Stagger 게이지를 시각화하고, 0이 되면 보스가 그로기 상태(애니메이션 재생 & 방어력 감소)에 빠지는 기믹을 구현합니다.
-3. 보스 AI (패턴 1):
-    - 샌드백을 졸업하고, 보스가 플레이어를 향해 걸어오거나 평타를 휘두르는 첫 번째 Behavior Tree를 작성합니다.
+1. 보스 패턴 어빌리티 구현: MyPawnData에 보스 전용 스킬(GameplayAbility) 리스트를 추가하고 AI와 연동.

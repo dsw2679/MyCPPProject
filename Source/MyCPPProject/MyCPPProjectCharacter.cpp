@@ -19,41 +19,6 @@
 #include "Experience/MyPawnData.h"
 
 
-void AMyCPPProjectCharacter::PreloadAssets()
-{
-	if (!PawnData) return;
-
-	UE_LOG(LogTemp, Warning, TEXT("[Hero] Starting Preload for %s"), *GetName());
-
-	// 1. VFX(Niagara) 프리로드
-	for (auto VFX : PawnData->PreloadVFX)
-	{
-		if (VFX) {
-			// 실제 사용은 안 하지만 포인터를 참조함으로써 메모리에 로드 상태 유지
-			UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded VFX: %s"), *VFX->GetName());
-		}
-	}
-
-	// 2. SFX(Sound) 프리로드
-	for (auto SFX : PawnData->PreloadSFX)
-	{
-		if (SFX) {
-			UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded SFX: %s"), *SFX->GetName());
-		}
-	}
-
-	// 3. GameplayCues 프리로드 (클래스 로딩)
-	for (auto CueClass : PawnData->PreloadGameplayCues)
-	{
-		if (CueClass) {
-			// 클래스 디폴트 객체(CDO)를 참조하여 로드 보장
-			CueClass->GetDefaultObject();
-			UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded Cue: %s"), *CueClass->GetName());
-		}
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("[Hero] Preload Complete!"));
-}
 
 AMyCPPProjectCharacter::AMyCPPProjectCharacter()
 {
@@ -143,8 +108,6 @@ void AMyCPPProjectCharacter::OnRep_PlayerState()
 void AMyCPPProjectCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	PreloadAssets();
 	// stub
 }
 

@@ -11,6 +11,7 @@
 #include "MyGameplayTags.h"
 #include "NiagaraSystem.h"
 #include "Experience/MyPawnData.h"
+#include "Boss/MyBossAIController.h"
 
 AMyBossCharacter::AMyBossCharacter()
 {
@@ -68,20 +69,36 @@ void AMyBossCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AMyBossCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	// GAS 초기화
+
+	// GAS 초기화 확인
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		// PawnData가 있다면 스킬(Ability) 부여
+		if (PawnData && HasAuthority())
+		{
+
+			// (만약 아까 제가 제안드린) 'BossAbilities' 배열을 따로 만드셨다면:
+			for (const TSubclassOf<UGameplayAbility>& AbilityClass : PawnData->BossAbilities)
+			{
+				if (AbilityClass)
+				{
+					FGameplayAbilitySpec Spec(AbilityClass);
+					Spec.SourceObject = this;
+					Spec.Level = 1;
+					AbilitySystemComponent->GiveAbility(Spec);
+				}
+			} 
+		}
 	}
 
-	// 메시지 방송
+	// 메시지 방송 (기존 코드 유지)
 	FMyBossMessageStruct Message;
 	Message.BossActor = this;
 	Message.BossASC = this->GetAbilitySystemComponent();
-	
-	UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Boss_Spawned, Message);
 
-	UE_LOG(LogTemp, Warning, TEXT("[Boss] PossessedBy: Broadcasted Spawn Message!"));
+	UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Boss_Spawned, Message);
 }
 
 void AMyBossCharacter::PreloadAssets()
@@ -91,10 +108,16 @@ void AMyBossCharacter::PreloadAssets()
 	UE_LOG(LogTemp, Warning, TEXT("[Boss] Starting Preload for %s"), *GetName());
 
 	// 1. VFX(Niagara) 프리로드
+	// HitEffect 프리로드 (가장 중요)
+	for (auto HitFX : PawnData->OnlyBoss_HitEffect)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded HitEffect: %s"), *HitFX->GetName());
+	}
+
+	// 목록에 있는 VFX 프리로드
 	for (auto VFX : PawnData->PreloadVFX)
 	{
 		if (VFX) {
-			// 실제 사용은 안 하지만 포인터를 참조함으로써 메모리에 로드 상태 유지
 			UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded VFX: %s"), *VFX->GetName());
 		}
 	}
@@ -107,17 +130,38 @@ void AMyBossCharacter::PreloadAssets()
 		}
 	}
 
-	// 3. GameplayCues 프리로드 (클래스 로딩)
-	for (auto CueClass : PawnData->PreloadGameplayCues)
+	// 3. GameplayCues 프리로드 (중요: LoadSynchronous 사용)
+	for (const TSoftClassPtr<UObject>& CueSoftClass : PawnData->PreloadGameplayCues)
 	{
-		if (CueClass) {
-			// 클래스 디폴트 객체(CDO)를 참조하여 로드 보장
-			CueClass->GetDefaultObject();
-			UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded Cue: %s"), *CueClass->GetName());
+		if (!CueSoftClass.IsNull())
+		{
+			// SoftClassPtr을 즉시 로드하여 메모리에 올림
+			if (UClass* LoadedClass = CueSoftClass.LoadSynchronous())
+			{
+				// CDO를 참조하여 GC 방지 및 초기화 보장
+				LoadedClass->GetDefaultObject();
+				UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded Cue: %s"), *LoadedClass->GetName());
+			}
+		}
+	}
+	
+	for (auto Montage : PawnData->PreloadMontages)
+	{
+		if (Montage)
+		{
+			// UE_LOG(LogTemp, Log, TEXT("Preloaded Montage: %s"), *Montage->GetName());
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Boss] Preload Complete!"));
+	for (const TSubclassOf<UGameplayEffect>& GEClass : PawnData->PreloadGameplayEffects)
+	{
+		if (GEClass)
+		{
+			// CDO(Class Default Object)를 가져와서 확실하게 초기화
+			GEClass->GetDefaultObject();
+			UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded GE: %s"), *GEClass->GetName());
+		}
+	}
 }
 
 void AMyBossCharacter::OnBossInfoRequested(FGameplayTag Channel, const struct FMyBossMessageStruct& Payload)
