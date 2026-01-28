@@ -8,13 +8,15 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
+#include "Kismet/KismetMathLibrary.h"
 
 void UGameplayAbility_Boss::ShowTelegraphCircle(FGameplayTag CueTag, FVector CenterLocation, float Radius,
-	float Duration)
+                                                float Duration)
 {
 	FGameplayCueParameters CueParams;
 	CueParams.Location = CenterLocation;
 	CueParams.RawMagnitude = Radius;
+	CueParams.NormalizedMagnitude = Duration;
 	CueParams.SourceObject = GetAvatarActorFromActorInfo();
 	// Duration은 GC 내부에서 처리하거나, EffectCauser 등을 통해 전달 가능
 	// 여기서는 일단 인스턴스형 GC라면 파라미터로 넘겨줄 수 있습니다.
@@ -27,7 +29,7 @@ void UGameplayAbility_Boss::ShowTelegraphCircle(FGameplayTag CueTag, FVector Cen
 }
 
 void UGameplayAbility_Boss::ApplyDamageToArea(FVector CenterLocation, float Radius, float DamageAmount,
-	TSubclassOf<UGameplayEffect> DamageEffectClass)
+                                              TSubclassOf<UGameplayEffect> DamageEffectClass)
 {
 	if (!DamageEffectClass) return;
 
@@ -56,14 +58,16 @@ void UGameplayAbility_Boss::ApplyDamageToArea(FVector CenterLocation, float Radi
 		if (SpecHandle.IsValid())
 		{
 			// 데미지 수치 설정 (Data.Damage 태그 사용)
-			SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")), DamageAmount);
+			SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")),
+			                                         DamageAmount);
 
 			for (AActor* HitActor : OutActors)
 			{
 				if (HitActor && HitActor != GetAvatarActorFromActorInfo())
 				{
 					// 2. 각 타겟에게 적용
-					UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(HitActor);
+					UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(
+						HitActor);
 					if (TargetASC)
 					{
 						// TargetASC에 적용 (ApplyGameplayEffectSpecToSelf 사용)
@@ -98,4 +102,220 @@ FVector UGameplayAbility_Boss::GetPlayerLocation(float ForwardDistance)
 
 	// 플레이어를 못 찾았으면 그냥 보스 위치 반환 (안전장치)
 	return GetAvatarActorFromActorInfo()->GetActorLocation();
+}
+
+TArray<FVector> UGameplayAbility_Boss::GetClapLocations(float ForwardDistance, float SideDistance)
+{
+	TArray<FVector> Locations;
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar) return Locations;
+
+	FVector Center = Avatar->GetActorLocation();
+	FVector Forward = Avatar->GetActorForwardVector();
+	FVector Right = Avatar->GetActorRightVector();
+
+	// 바닥 Z축 보정 (필요시 활성화, 보통은 Center Z를 그대로 씀)
+	// float FloorZ = Center.Z - Avatar->GetSimpleCollisionHalfHeight();
+	// FVector BaseLoc = FVector(Center.X, Center.Y, FloorZ);
+
+	// 순서대로 배열에 추가
+
+	// [0] 앞 (Front)
+	Locations.Add(Center + (Forward * ForwardDistance));
+
+	// [1] 중앙 (Center - 보스 위치)
+	Locations.Add(Center);
+
+	// [2] 뒤 (Back)
+	Locations.Add(Center - (Forward * ForwardDistance));
+
+	// [3] 왼쪽 (Left)
+	Locations.Add(Center - (Right * SideDistance));
+
+	// [4] 오른쪽 (Right)
+	Locations.Add(Center + (Right * SideDistance));
+
+	return Locations;
+}
+
+void UGameplayAbility_Boss::ShowTelegraphRect(FGameplayTag CueTag, FVector CenterLocation, FRotator Rotation,
+                                              FVector Extent, float Duration)
+{
+	FGameplayCueParameters CueParams;
+	CueParams.Location = CenterLocation;
+	CueParams.Normal = Rotation.Vector(); // 회전 정보를 Normal에 담아 전달
+	CueParams.RawMagnitude = Extent.X; // 크기 정보 (X축 기준 스케일로 활용 가능)
+	CueParams.NormalizedMagnitude = Duration;
+	CueParams.SourceObject = GetAvatarActorFromActorInfo();
+
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		ASC->ExecuteGameplayCue(CueTag, CueParams);
+	}
+}
+
+void UGameplayAbility_Boss::ApplyDamageToRect(FVector CenterLocation, FRotator Rotation, FVector Extent,
+                                              float DamageAmount, TSubclassOf<UGameplayEffect> DamageEffectClass)
+{
+	if (!DamageEffectClass) return;
+
+	TArray<AActor*> OutActors;
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(GetAvatarActorFromActorInfo());
+
+	// Box Overlap 사용
+	bool bHit = UKismetSystemLibrary::BoxOverlapActors(
+		this,
+		CenterLocation,
+		Extent,
+		HitObjectTypes,
+		APawn::StaticClass(),
+		ActorsToIgnore,
+		OutActors
+	);
+
+	// 디버그용 박스 그리기 (보라색)
+	DrawDebugBox(GetWorld(), CenterLocation, Extent, Rotation.Quaternion(), FColor::Red, false, 2.0f);
+
+	if (bHit)
+	{
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass);
+		if (SpecHandle.IsValid())
+		{
+			SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")),
+			                                         DamageAmount);
+
+			for (AActor* HitActor : OutActors)
+			{
+				if (HitActor && HitActor != GetAvatarActorFromActorInfo())
+				{
+					UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(
+						HitActor);
+					if (TargetASC)
+					{
+						TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+					}
+				}
+			}
+		}
+	}
+}
+
+void UGameplayAbility_Boss::ShowTelegraphRect_Explicit(FGameplayTag CueTag, FVector CenterLocation, FRotator Rotation,
+                                                       FVector Extent, float Duration)
+{
+	FGameplayCueParameters CueParams;
+	CueParams.Location = CenterLocation; // 위치.
+	CueParams.Normal = Extent;
+	CueParams.RawMagnitude = Rotation.Yaw;
+	CueParams.NormalizedMagnitude = Duration; // 지속 시간
+	CueParams.SourceObject = GetAvatarActorFromActorInfo();
+
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		ASC->ExecuteGameplayCue(CueTag, CueParams);
+	}
+}
+
+void UGameplayAbility_Boss::FacePlayer(float RotationSpeed)
+{
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar) return;
+
+	// 플레이어 위치 가져오기 (기존 함수 활용)
+	FVector PlayerLoc = GetPlayerLocation();
+	FVector MyLoc = Avatar->GetActorLocation();
+
+	// 높이(Z) 무시하고 방향 계산 (평면 회전)
+	PlayerLoc.Z = MyLoc.Z;
+
+	// 바라봐야 할 회전값 계산 (FindLookAtRotation)
+	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(MyLoc, PlayerLoc);
+
+	// 회전 적용
+	if (RotationSpeed <= 0.0f)
+	{
+		// 즉시 회전
+		Avatar->SetActorRotation(TargetRotation);
+	}
+	else
+	{
+		// (간단 구현: 일단 즉시 회전으로 통일)
+		Avatar->SetActorRotation(TargetRotation);
+	}
+}
+
+void UGameplayAbility_Boss::ApplyDamageToCone(FVector CenterLocation, FRotator Rotation, float Radius, float HalfAngle,
+                                              float DamageAmount, TSubclassOf<UGameplayEffect> DamageEffectClass)
+{
+	if (!DamageEffectClass) return;
+
+	// 일단 원형(Sphere)으로 주변 적들을 다 찾습니다.
+	TArray<AActor*> OutActors;
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(GetAvatarActorFromActorInfo());
+
+	bool bHit = UKismetSystemLibrary::SphereOverlapActors(
+		this,
+		CenterLocation,
+		Radius,
+		HitObjectTypes, // 기존에 정의된 HitObjectTypes 사용
+		APawn::StaticClass(),
+		ActorsToIgnore,
+		OutActors
+	);
+
+	// 디버그: 부채꼴 모양 그리기 (대략적인 표현)
+	// 중심선
+	FVector Forward = Rotation.Vector();
+	DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + Forward * Radius, FColor::Red, false, 2.0f);
+
+	// 부채꼴 양 끝선 (간단 디버그용)
+	FVector LeftDir = Forward.RotateAngleAxis(-HalfAngle, FVector::UpVector);
+	FVector RightDir = Forward.RotateAngleAxis(HalfAngle, FVector::UpVector);
+	DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + LeftDir * Radius, FColor::Yellow, false, 2.0f);
+	DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + RightDir * Radius, FColor::Yellow, false, 2.0f);
+
+
+	if (bHit)
+	{
+		// Spec 생성
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass);
+		if (SpecHandle.IsValid())
+		{
+			SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")),
+			                                         DamageAmount);
+
+			// 찾은 적들 중, "각도" 안에 있는 녀석만 골라냅니다.
+			for (AActor* HitActor : OutActors)
+			{
+				if (!HitActor || HitActor == GetAvatarActorFromActorInfo()) continue;
+
+				// 타겟 방향 벡터 계산
+				FVector DirectionToTarget = (HitActor->GetActorLocation() - CenterLocation).GetSafeNormal();
+
+				// 내적(Dot Product)을 이용한 각도 계산
+				// Forward와 TargetDir의 내적값 = cos(각도)
+				float DotResult = FVector::DotProduct(Forward, DirectionToTarget);
+
+				// 내적값을 각도로 변환 (Acos -> Radian -> Degree)
+				float AngleToTarget = FMath::RadiansToDegrees(FMath::Acos(DotResult));
+
+				// 각도가 HalfAngle보다 작거나 같으면 범위 안!
+				if (AngleToTarget <= HalfAngle)
+				{
+					UAbilitySystemComponent* TargetASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(
+						HitActor);
+					if (TargetASC)
+					{
+						TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+						// 디버그: 맞은 놈 표시
+						DrawDebugSphere(GetWorld(), HitActor->GetActorLocation(), 30.0f, 12, FColor::Green, false,
+						                1.0f);
+					}
+				}
+			}
+		}
+	}
 }

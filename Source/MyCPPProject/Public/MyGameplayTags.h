@@ -35,4 +35,8 @@ namespace MyGameplayTags
 	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Boss_Pattern_Special_Pointing);			// 특수(70%): 광역 장판
 	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Boss_Pattern_Special_Siphon);			// 특수(40%): 저주
 	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Boss_Pattern_Special_Ultimate);			// 특수(10%): 필살기
+	
+	// 상태 및 이벤트 태그
+	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Boss_Dashing);          // 돌진 중 상태 판별용
+	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Boss_Hit_Speedburst);   // 돌진 충돌 시 이벤트 발생용
 }

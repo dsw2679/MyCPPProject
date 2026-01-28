@@ -28,4 +28,8 @@ namespace MyGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Boss_Pattern_Special_Pointing, "Boss.Pattern.Special.Pointing");
 	UE_DEFINE_GAMEPLAY_TAG(Boss_Pattern_Special_Siphon, "Boss.Pattern.Special.Siphon");
 	UE_DEFINE_GAMEPLAY_TAG(Boss_Pattern_Special_Ultimate, "Boss.Pattern.Special.UltimateSwing");
+	
+	// 상태 태그
+	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Dashing, "State.Boss.Dashing");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Boss_Hit_Speedburst, "Event.Boss.Hit.Speedburst");
 }

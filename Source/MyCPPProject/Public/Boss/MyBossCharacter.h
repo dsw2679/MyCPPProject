@@ -34,6 +34,24 @@ protected:
 	
 	virtual void PossessedBy(AController* NewController) override;
 	
+	// overlap
+	UFUNCTION()
+	void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	
+	// Hit 이벤트 처리 함수
+	UFUNCTION()
+	void OnCapsuleHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	// 충돌 처리 로직 분리
+	void ProcessCollision(AActor* OtherActor, FVector DebugLoc);
+	
+	// 돌진 중 이미 충돌한 액터 목록 (중복 피격 방지용)
+	UPROPERTY()
+	TSet<AActor*> SpeedburstHitActors;
+
+	// 태그 변경 감지 함수 (돌진 시작될 때 목록 초기화하려고 씀)
+	virtual void OnDashTagChanged(const FGameplayTag Tag, int32 NewCount);
+	
 	// 이 보스가 사용할 데이터 에셋
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss")
 	TObjectPtr<const UMyPawnData> PawnData;
@@ -56,3 +74,5 @@ protected:
 	// 요청이 오면 실행될 함수
 	void OnBossInfoRequested(FGameplayTag Channel, const struct FMyBossMessageStruct& Payload);
 };
+
+

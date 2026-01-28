@@ -3,6 +3,7 @@
 
 #include "Boss/MyBossCharacter.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Advanced/MyAttributeSet.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
@@ -12,6 +13,9 @@
 #include "NiagaraSystem.h"
 #include "Experience/MyPawnData.h"
 #include "Boss/MyBossAIController.h"
+#include "Components/CapsuleComponent.h"
+#include "DrawDebugHelpers.h"
+
 
 AMyBossCharacter::AMyBossCharacter()
 {
@@ -42,6 +46,12 @@ void AMyBossCharacter::BeginPlay()
 		// AI 컨트롤러가 빙의된 상태라면 InitAbilityActorInfo 호출
 		// 보통 AI는 여기서 자신을 Owner이자 Avatar로 설정합니다.
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		
+		// 돌진 태그(State.Boss.Dashing)가 변할 때 실행될 함수 등록
+		AbilitySystemComponent->RegisterGameplayTagEvent(
+			MyGameplayTags::State_Boss_Dashing,
+			EGameplayTagEventType::NewOrRemoved
+		).AddUObject(this, &AMyBossCharacter::OnDashTagChanged);
 	}
 
 	if (HasAuthority() && InitStatEffect) // 서버(싱글에선 나)만 방송
@@ -56,6 +66,13 @@ void AMyBossCharacter::BeginPlay()
 		{
 			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		}
+	}
+	
+	// 캡슐 컴포넌트에 오버랩 이벤트 연결
+	if (GetCapsuleComponent())
+	{
+		GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AMyBossCharacter::OnCapsuleBeginOverlap);
+		GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AMyBossCharacter::OnCapsuleHit);
 	}
 }
 
@@ -99,6 +116,60 @@ void AMyBossCharacter::PossessedBy(AController* NewController)
 	Message.BossASC = this->GetAbilitySystemComponent();
 
 	UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Boss_Spawned, Message);
+}
+
+void AMyBossCharacter::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	FVector DebugLoc = (OtherActor->GetActorLocation() + GetActorLocation()) * 0.5f;
+	ProcessCollision(OtherActor, DebugLoc);
+}
+
+void AMyBossCharacter::OnCapsuleHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	ProcessCollision(OtherActor, Hit.Location);
+}
+
+void AMyBossCharacter::ProcessCollision(AActor* OtherActor, FVector DebugLoc)
+{
+	if (!OtherActor || OtherActor == this) return;
+
+	// 디버그: 무조건 파란색 원
+	DrawDebugSphere(GetWorld(), DebugLoc, 50.0f, 12, FColor::Blue, false, 2.0f);
+
+	if (!OtherActor->IsA(ACharacter::StaticClass())) return;
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC) return;
+
+	// 태그 확인 (돌진 중인가?)
+	bool bIsDashing = ASC->HasMatchingGameplayTag(MyGameplayTags::State_Boss_Dashing);
+
+	if (bIsDashing)
+	{
+		// 이미 맞은 놈인지 검사
+		if (SpeedburstHitActors.Contains(OtherActor))
+		{
+			// 이미 맞았으면 그냥 리턴 (중복 피격 방지)
+			return;
+		}
+		// 처음 맞았으니 목록에 등록
+		SpeedburstHitActors.Add(OtherActor);
+		
+		// 태그가 있으면 빨간색 원 (데미지 판정)
+		DrawDebugSphere(GetWorld(), DebugLoc, 60.0f, 12, FColor::Red, false, 2.0f);
+
+		// 이벤트 전송
+		FGameplayEventData Payload;
+		Payload.Target = OtherActor;
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, MyGameplayTags::Event_Boss_Hit_Speedburst, Payload);
+	}
+	else
+	{
+		// 태그가 없으면 녹색 원
+		DrawDebugSphere(GetWorld(), DebugLoc, 40.0f, 12, FColor::Green, false, 2.0f);
+	}
 }
 
 void AMyBossCharacter::PreloadAssets()
@@ -173,4 +244,14 @@ void AMyBossCharacter::OnBossInfoRequested(FGameplayTag Channel, const struct FM
 	Message.BossASC = this->GetAbilitySystemComponent();
 
 	UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Request_BossInfo, Message);
+}
+
+void AMyBossCharacter::OnDashTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	// 태그가 생겼다(Count > 0) == 돌진 시작
+	if (NewCount > 0)
+	{
+		SpeedburstHitActors.Empty();
+		UE_LOG(LogTemp, Warning, TEXT("[Boss] Speedburst Start! Hit List Cleared."));
+	}
 }
