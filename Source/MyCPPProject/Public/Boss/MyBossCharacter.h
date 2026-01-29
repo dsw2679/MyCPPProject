@@ -26,6 +26,10 @@ public:
 
 	// IAbilitySystemInterface 구현
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	
+	// 주변 랜덤 네비게이션 포인트 반환
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
+	FVector GetRandomLocationInNavigableRadius(float Radius);
 
 protected:
 	virtual void BeginPlay() override;

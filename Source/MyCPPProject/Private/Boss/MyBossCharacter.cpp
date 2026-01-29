@@ -15,6 +15,7 @@
 #include "Boss/MyBossAIController.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
+#include "NavigationSystem.h"
 
 
 AMyBossCharacter::AMyBossCharacter()
@@ -34,6 +35,22 @@ AMyBossCharacter::AMyBossCharacter()
 UAbilitySystemComponent* AMyBossCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
+}
+
+FVector AMyBossCharacter::GetRandomLocationInNavigableRadius(float Radius)
+{
+	if (GetWorld())
+	{
+		if (UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld()))
+		{
+			FNavLocation RandomLocation;
+			if (NavSystem->GetRandomPointInNavigableRadius(GetActorLocation(), Radius, RandomLocation))
+			{
+				return RandomLocation.Location;
+			}
+		}
+	}
+	return GetActorLocation();
 }
 
 void AMyBossCharacter::BeginPlay()

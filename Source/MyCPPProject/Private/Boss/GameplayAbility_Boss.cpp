@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "NavigationSystem.h"
 
 void UGameplayAbility_Boss::ShowTelegraphCircle(FGameplayTag CueTag, FVector CenterLocation, float Radius,
                                                 float Duration)
@@ -319,3 +320,82 @@ void UGameplayAbility_Boss::ApplyDamageToCone(FVector CenterLocation, FRotator R
 		}
 	}
 }
+
+float UGameplayAbility_Boss::StartZoneLoop(int32 Count, float Interval, float SpawnRadius, float ExplosionDelay,
+	float DamageRadius, float DamageAmount, TSubclassOf<UGameplayEffect> DamageEffectClass, FGameplayTag CueTag)
+{
+	if (Count <= 0) return 0.0f;
+
+	UWorld* World = GetWorld();
+	if (!World) return 0.0f;
+
+	// 이번 회차 장판 생성 (SpawnRandomZoneExplosion 로직 인라인 또는 호출)
+	SpawnRandomZoneExplosion(SpawnRadius, ExplosionDelay, DamageRadius, DamageAmount, DamageEffectClass, CueTag);
+
+	// 남은 횟수가 있다면 다음 타이머 예약
+	int32 RemainingCount = Count - 1;
+	if (RemainingCount > 0)
+	{
+		FTimerHandle RecursiveHandle; // Fire & Forget
+		FTimerDelegate TimerDel;
+
+		// 중요: WeakLambda를 써서 어빌리티가 소멸되면 안전하게 중단되도록 함 (또는 람다 캡처로 값 전달)
+		// 여기서는 필요한 값들을 모두 캡처(복사)하여 다음 호출로 넘깁니다.
+		TimerDel.BindWeakLambda(this, [=, this]()
+		{
+			StartZoneLoop(RemainingCount, Interval, SpawnRadius, ExplosionDelay, DamageRadius, DamageAmount, DamageEffectClass, CueTag);
+		});
+
+		World->GetTimerManager().SetTimer(RecursiveHandle, TimerDel, Interval, false);
+	}
+	// 총 지속 시간 계산: (총 횟수 - 1) * 생성 간격 + 마지막 장판의 폭발 대기 시간
+	float TotalDuration = (static_cast<float>(Count) - 1.0f) * Interval + ExplosionDelay;
+
+	return TotalDuration;
+}
+
+void UGameplayAbility_Boss::SpawnRandomZoneExplosion(float SpawnRadius, float ExplosionDelay, float DamageRadius,
+                                                     float DamageAmount, TSubclassOf<UGameplayEffect> DamageEffectClass, FGameplayTag CueTag)
+{
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar) return;
+
+	// 랜덤 위치 계산 (Navigation System 활용)
+	FVector Origin = Avatar->GetActorLocation();
+	FVector TargetLocation = Origin;
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World))
+		{
+			FNavLocation RandomNavLoc;
+			// 네비게이션 메시 위에서 유효한 위치를 찾습니다.
+			if (NavSystem->GetRandomPointInNavigableRadius(Origin, SpawnRadius, RandomNavLoc))
+			{
+				TargetLocation = RandomNavLoc.Location;
+			}
+		}
+
+		// 전조(Telegraph) 즉시 실행 (GameplayCue)
+		ShowTelegraphCircle(CueTag, TargetLocation, DamageRadius, ExplosionDelay);
+
+		// 지연 후 폭발 (TimerDelegate 사용)
+		// 람다를 사용하지 않고 멤버 함수를 바인딩하여 안전하게 처리
+		FTimerDelegate TimerDel;
+		TimerDel.BindUObject(this, &UGameplayAbility_Boss::Internal_ExplodeZone, TargetLocation, DamageRadius, DamageAmount, DamageEffectClass);
+
+		// 타이머 핸들은 저장하지 않음 (Fire & Forget). 어빌리티가 종료되어도 장판은 터져야 자연스럽기 때문.
+		// 만약 어빌리티 취소 시 장판도 사라져야 한다면 핸들 관리가 필요하지만, 장판 패턴은 보통 깔아두면 끝까지 가는 게 일반적입니다.
+		FTimerHandle TempHandle;
+		World->GetTimerManager().SetTimer(TempHandle, TimerDel, ExplosionDelay, false);
+	}
+
+}
+
+void UGameplayAbility_Boss::Internal_ExplodeZone(FVector TargetLocation, float Radius, float Amount,
+	TSubclassOf<UGameplayEffect> EffectClass)
+{
+	// 기존에 구현된 광역 데미지 함수 재사용
+	ApplyDamageToArea(TargetLocation, Radius, Amount, EffectClass);
+}
+

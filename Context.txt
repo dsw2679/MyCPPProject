@@ -160,20 +160,36 @@ kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 �
  * 역할: 캐릭터가 스폰되면 ExperienceManager에게 PawnData를 달라고 요청한 뒤, GAS 초기화(InitAbilityActorInfo) + 스킬 부여(GrantAbility) + 입력 바인딩(BindInput)을 수행합니다.
  * 결과: 기존 AMyCPPProjectCharacter에 있던 복잡한 로직들이 싹 사라지고 이 컴포넌트로 이동합니다.
 
+[어제의 작업 요약: 보스 특수 패턴 구현 (Phase 2 & 3)]
 
-[어제 한 일]
+1. 보스 특수 패턴 (70%): Pointing (랜덤 장판)
+ * 구현 방식:
+     * GameplayAbility_Boss에 `StartZoneLoop` 함수(C++ 재귀 타이머) 추가.
+     * Stateless 구조를 위해 멤버 변수 대신 람다 캡처로 상태 관리.
+     * GA_Boss_Pointing (BP)에서 몽타주와 함께 해당 함수 호출.
+     * 몽타주는 "정재생 + 역재생" 시퀀스를 결합하여 자연스러운 루프 모션 구현.
+ * 이펙트 최적화:
+     * 장판(Decal) 중첩 문제를 해결하기 위해 GC_..._Pointing에서 직접 렌더링하지 않고, 별도의 액터(`BP_Pointing_Decal`)를 Spawn하는 방식으로 변경.
+     * Expose on Spawn 변수를 통해 크기와 시간을 동적으로 전달.
 
-1. AI 및 전투 시스템 (Core Gameplay)
-- 지능형 보스 AI: 블랙보드와 비헤이비어 트리를 구축하여 상황(체력, 거리)에 따라 특수 패턴(페이즈), 거리 패턴(끌어오기), 랜덤 패턴을 스스로 판단하고 구사하는 로직을 완성했습니다.
-- C++ 기반 스킬 모듈화: UMyGameplayAbility_Boss 베이스 클래스를 설계하여 전조(Telegraph) 생성, 광역 타격 판정(SphereOverlap), 플레이어 위치 추적 등의 공통 로직을 C++로 최적화하고블루프린트 복잡도를 제거했습니다.
-- 시각적 피드백 (Telegraph): Decal과 Timeline을 활용하여 위협적인 공격 전조 효과를 구현하고, 캐릭터에 데칼이 묻지 않도록 Receives Decals 옵션을 조정하여 시인성을 높였습니다.
-2. 핵심 최적화 및 트러블슈팅 (Critical Optimization)
-- 네이티브 태그 전환 (Performance): 기존 RequestGameplayTag의 문자열 검색 방식이 전투 중 심각한 병목(5초 멈춤)을 유발함을 파악하고, extern 방식의 Native Gameplay Tags로 전면 교체하여 태그 비교 비용을
-비트/포인터 연산 수준으로 낮춰 Latency를 최소화 했습니다.
-- 에셋 프리로드 시스템 (Asset Management): MyPawnData를 확장하여 VFX, SFX, GameplayCue 등을 TSoftClassPtr와 LoadSynchronous를 통해 미리 메모리에 로드하는 구조를 구축, 전투 중 발생하는 Hitch(프레임 드랍) 현상을 원천 차단했습니다.
-3. 데이터 주도 설계 (Data-Driven Design)
-- 보스 데이터 구조화: MyPawnData를 통해 보스의 스킬, 히트 이펙트, 초기 스탯 등을 데이터 에셋(DA_BossSevarog)으로 관리하고, PossessedBy 시점에 자동으로 초기화되도록 하여 코드 수정 없이 데이터만으로 보스를 확장할 수 있는 유연성을 확보했습니다.
+2. 보스 특수 패턴 (40%): Soul Siphon (저주와 피난처)
+ * 기획: 보스가 저주(5초 카운트)를 걸고 플레이어는 안전지대로 피해야 함. 실패 시 즉사.
+ * 구현 상태:
+     * `BP_SanctuaryZone`: 플레이어 진입 시 GE_Invincible (무적) 부여, 이탈 시 해제.
+     * `GE_Global_Wipe`: 전체 즉사 데미지. Buff.Invincible 태그가 있으면 무시(Ignore)하도록 설정.
+     * `GA_Boss_SoulSiphon`: 몽타주 재생 -> 안전지대 랜덤 생성(GetRandomLocationInNavigableRadius) -> 5초 대기 -> 전멸기 발동.
+     * AI 제어: MyBTService_PickRandomPattern을 수정하여, 특정 태그(State.Boss.ForceSwing)가 있으면 강제로 `SwingCombo` 패턴만 실행하도록 AI 로직 고정.
+
+3. 보류된 작업 (UI 관련)
+ * 카운트다운 UI: 플레이어 머리 위에 5초 카운트다운을 띄우는 GC_Boss_Curse를 작업했으나, 위젯이 보이지 않는 이슈 발생.
+ * 원인 추정: Widget Component의 Space 설정(World vs Screen) 문제 또는 소켓(head) 위치 문제로 보임.
+ * 결정: UI 관련 디버깅은 추후 UI 전용 작업일에 일괄 처리하기로 함.
 
 [오늘 할 일]
 
-GA_Boss_Basic_Cast 형식을 복사해서, 나머지 4가지 일반 패턴과 3가지 특수 패턴의 애니메이션/데미지 구현
+
+(특수 체력 10%)Ultimate_Swing - 타게팅하다 순식간에 다가와 플레이어를 날리는 공격을 함
+
+(보스와 일정거리 이상 멀어지면 발동)Emote_pull_MC_T1 - 거리가 너무 멀어질시 강제로 플레이어가 보스앞으로 당겨와짐  패턴 구현
+
+참고: `GameplayAbility_Boss.cpp`에는 재귀 타이머 로직이, `MyBTService_PickRandomPattern.cpp`에는 태그 기반 강제 패턴 선택 로직이 추가되어 있습니다."

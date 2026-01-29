@@ -36,7 +36,7 @@ void UMyBTService_UpdateBossStats::TickNode(UBehaviorTreeComponent& OwnerComp, u
 		}
 	}
 
-	// 2. 플레이어와의 거리 업데이트
+	// 플레이어와의 거리 업데이트
 	UObject* TargetObj = OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("TargetActor"));
 	AActor* TargetActor = Cast<AActor>(TargetObj);
 	if (TargetActor)

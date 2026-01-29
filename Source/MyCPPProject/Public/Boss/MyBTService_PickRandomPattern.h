@@ -31,6 +31,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float PickInterval = 2.0f;
 
+	// 이 태그를 가지고 있으면 랜덤 주사위를 굴리지 않고 특정 패턴을 강제합니다.
+	UPROPERTY(EditAnywhere, Category = "AI")
+	FGameplayTag ForcePatternTag;
+
+	// 강제할 패턴의 인덱스 번호 (SwingCombo가 4번이라면 4를 입력)
+	UPROPERTY(EditAnywhere, Category = "AI")
+	int32 ForcePatternIndex = 4;
+	
 private:
 	float TimeSinceLastPick = 0.0f;
 };
