@@ -37,6 +37,14 @@ protected:
 	);
 	
 public:
+	// 이동 속도
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MoveSpeed, Category = "Attributes")
+	FGameplayAttributeData MoveSpeed;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, MoveSpeed)
+
+	UFUNCTION()
+	virtual void OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed);
+	
 	// 체력 관련
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Attributes")
 	FGameplayAttributeData Health;
@@ -111,5 +119,10 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Lyra|Health", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Damage;
 	ATTRIBUTE_ACCESSORS(UMyAttributeSet, Damage);
+	
+	// 들어오는 무력화 값을 임시로 저장하는 메타 속성
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData IncomingStagger;
+	ATTRIBUTE_ACCESSORS(UMyAttributeSet, IncomingStagger);
 	
 };

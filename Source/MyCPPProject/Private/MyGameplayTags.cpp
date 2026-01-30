@@ -32,4 +32,8 @@ namespace MyGameplayTags
 	// 상태 태그
 	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Dashing, "State.Boss.Dashing");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Boss_Hit_Speedburst, "Event.Boss.Hit.Speedburst");
+	
+	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Staggered, "State.Boss.Staggered");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Boss_Staggered, "Event.Boss.Staggered");
+	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Immune_Stagger, "State.Boss.Immune.Stagger");
 }

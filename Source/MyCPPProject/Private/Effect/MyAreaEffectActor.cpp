@@ -81,6 +81,12 @@ void AMyAreaEffectActor::OnTimerTick()
 				{
 					SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("SetByCaller.Damage")), DamagePerTick);
 					
+					// 무력화 수치 적용
+					if (StaggerTag.IsValid() && StaggerPerTick > 0.0f)
+					{
+						SpecHandle.Data->SetSetByCallerMagnitude(StaggerTag, StaggerPerTick);
+					}
+					
 					TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 				}
 			}

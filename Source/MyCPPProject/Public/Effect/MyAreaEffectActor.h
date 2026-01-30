@@ -52,6 +52,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AreaEffect", meta = (ExposeOnSpawn = "true"))
 	float DamagePerTick = 10.0f;
 	
+	// 틱당 무력화 수치
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AreaEffect", meta = (ExposeOnSpawn = "true"))
+	float StaggerPerTick = 0.0f;
+
+	// 무력화 태그 (SetByCaller.Stagger)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AreaEffect")
+	FGameplayTag StaggerTag;
+	
 	// 총 몇 번 터질 것인가?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AreaEffect", meta = (ExposeOnSpawn = "true"))
 	int32 MaxTickCount = 3;

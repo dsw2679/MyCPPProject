@@ -14,9 +14,10 @@
 #include "Advanced/MyCPPProjectPlayerState.h"
 #include "MotionWarpingComponent.h"
 #include "NiagaraSystem.h"
+#include "Advanced/MyAttributeSet.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
-#include "Experience/MyPawnData.h"
+#include "Advanced/MyAttributeSet.h"
 
 
 
@@ -84,6 +85,20 @@ void AMyCPPProjectCharacter::PossessedBy(AController* NewController)
 		{
 			HeroComponent->InitializeAbilitySystem();
 		}
+		
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			// ASC 내부의 AttributeSet을 검색
+			const UMyAttributeSet* MySet = ASC->GetSet<UMyAttributeSet>();
+
+			if (MySet)
+			{
+				// MoveSpeed 값이 변할 때마다 호출됨
+				ASC->GetGameplayAttributeValueChangeDelegate(
+					MySet->GetMoveSpeedAttribute()
+				).AddUObject(this, &AMyCPPProjectCharacter::OnMoveSpeedChanged);
+			}
+		}
 	}
 }
 
@@ -109,6 +124,11 @@ void AMyCPPProjectCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	// stub
+}
+
+void AMyCPPProjectCharacter::OnMoveSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
 }
 
 void AMyCPPProjectCharacter::Tick(float DeltaSeconds)

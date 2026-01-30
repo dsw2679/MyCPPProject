@@ -120,6 +120,16 @@ void UAnimNotifyState_AttackHitCheck::NotifyTick(USkeletalMeshComponent* MeshCom
 						float FinalDamage = BaseAttackPower * DamageMultiplier;
 						SpecHandle.Data.Get()->SetSetByCallerMagnitude(DamageEventTag, FinalDamage);
 						
+						// 무력화 수치 전달 (StaggerEventTag가 유효할 때만)
+						if (StaggerEventTag.IsValid() && StaggerMultiplier != 0.0f)
+						{
+							// 여기서는 Multiplier 값을 그대로 무력화 데미지 양으로 사용합니다.
+							// 예: 몽타주에서 20.0을 입력하면 20의 무력화 피해를 줌
+							SpecHandle.Data.Get()->SetSetByCallerMagnitude(StaggerEventTag, StaggerMultiplier);
+							
+							UE_LOG(LogTemp, Warning, TEXT("[HitCheck] Setting Stagger: %.1f with Tag: %s"), StaggerMultiplier, *StaggerEventTag.ToString());
+						}
+						
 						if (HitGameplayCueTag.IsValid())
 						{
 							// 이펙트 명세서(Spec)에 "이 태그에 해당하는 큐를 재생해라"라고 추가

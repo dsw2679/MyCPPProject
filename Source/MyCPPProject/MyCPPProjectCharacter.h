@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
+#include "GameplayEffectTypes.h"
 #include "GameFramework/Character.h"
 #include "MyCPPProjectCharacter.generated.h"
 
@@ -72,6 +73,8 @@ public:
 
 	/** Returns the Camera Boom component **/
 	USpringArmComponent* GetCameraBoom() const { return CameraBoom.Get(); }
-
+	
+protected:
+	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
 };
 

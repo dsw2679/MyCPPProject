@@ -68,6 +68,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
 	FGameplayTag DamageEventTag;
 	
+	// 무력화 수치 (예: 20.0이면 20만큼 깎음)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
+	float StaggerMultiplier = 0.0f;
+
+	// 무력화 수치를 전달할 태그 (SetByCaller.Stagger)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
+	FGameplayTag StaggerEventTag;
+	
 	// 타격 성공 시 재생할 GameplayCue 태그
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
 	FGameplayTag HitGameplayCueTag;

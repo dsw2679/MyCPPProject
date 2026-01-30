@@ -11,13 +11,12 @@
 #include "Engine/World.h"
 #include "EnhancedInputComponent.h"
 #include "Navigation/PathFollowingComponent.h"
-#include "InputActionValue.h"
-#include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "MyCPPProject.h"
 #include "PrimaryGameLayout.h"
 #include "Blueprint/UserWidget.h"
 #include "Advanced/MyPrimaryGameLayout.h"
+#include "AbilitySystemComponent.h"
 
 AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 {
@@ -85,6 +84,16 @@ void AMyCPPProjectPlayerController::OnInputStarted()
 
 void AMyCPPProjectPlayerController::OnSetDestinationTriggered()
 {
+	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(this);
+	if (ASI)
+	{
+		UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
+		if (ASC && ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Debuff.Locked"))))
+		{
+			return; // 스턴 상태면 입력 무시
+		}
+	}
+	
 	// We flag that the input is being pressed
 	FollowTime += GetWorld()->GetDeltaSeconds();
 	
@@ -102,6 +111,7 @@ void AMyCPPProjectPlayerController::OnSetDestinationTriggered()
 
 void AMyCPPProjectPlayerController::OnSetDestinationReleased()
 {
+	
 	// If it was a short press
 	if (FollowTime <= ShortPressThreshold)
 	{

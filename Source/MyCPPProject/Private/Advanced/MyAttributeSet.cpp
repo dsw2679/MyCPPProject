@@ -5,6 +5,8 @@
 #include "GameplayEffectExtension.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "MyGameplayTags.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "Message/MyBossMessageStruct.h"
 #include "Net/UnrealNetwork.h"
@@ -12,6 +14,7 @@
 UMyAttributeSet::UMyAttributeSet()
 {
 	InitDamageScale(1.0f);
+	InitIncomingStagger(0.0f);
 }
 
 void UMyAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -28,6 +31,7 @@ void UMyAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MaxStagger, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, DamageScale, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
 }
 
 void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -44,6 +48,11 @@ void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, fl
 	else if (Attribute == GetMaxMPAttribute())
 	{
 		AdjustAttributeForMaxChange(MP, MaxMP, NewValue, GetMPAttribute());
+	}
+	
+	if (Attribute == GetMoveSpeedAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.0f); // 음수 방지
 	}
 }
 
@@ -64,6 +73,17 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 
 		SetMP(ClampedValue);
 	}
+	
+	// 이동 속도 변경 시 실제 캐릭터 무브먼트에 적용
+	if (Data.EvaluatedData.Attribute == GetMoveSpeedAttribute())
+	{
+		ACharacter* AvatarChar = Cast<ACharacter>(Data.Target.AbilityActorInfo->AvatarActor.Get());
+		if (AvatarChar && AvatarChar->GetCharacterMovement())
+		{
+			AvatarChar->GetCharacterMovement()->MaxWalkSpeed = GetMoveSpeed();
+		}
+	}
+	
 	// 데미지가 들어왔을 때
 	if (Data.EvaluatedData.Attribute == GetDamageAttribute()) // 혹은 Health가 깎였을 때
 	{
@@ -83,16 +103,6 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 			const float OldHealth = GetHealth();
 			const float NewHealth = FMath::Clamp(OldHealth - FinalDamage, 0.0f, GetMaxHealth());
 			SetHealth(NewHealth);
-			
-			// FGameplayTag MyTag = FMyGameplayTags::Get().Message_Boss_HealthChanged;
-			//
-			// // 로그에 태그 이름이 나오는지 확인
-			// UE_LOG(LogTemp, Warning, TEXT("[ABS] Debug Tag Name: %s"), *MyTag.ToString());
-			//
-			// if (!MyTag.IsValid())
-			// {
-			// 	UE_LOG(LogTemp, Error, TEXT("[ABS] Critical: Tag is NOT VALID (None)!"));
-			// }
 			
 			// 체력 변경 메시지 방송
 			FMyBossHealthMessage HealthMsg;
@@ -167,6 +177,65 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 			}
 		}
 	}
+	// 무력화 게이지(Stagger) 변동 시 처리
+	if (Data.EvaluatedData.Attribute == GetIncomingStaggerAttribute())
+	{
+		// GetIncomingStagger() 대신 Magnitude를 직접 사용합니다.
+		const float LocalIncomingStagger = Data.EvaluatedData.Magnitude;
+		SetIncomingStagger(0.0f); // 메타 속성 초기화
+		
+		AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
+		
+		if (TargetActor)
+		{
+			FGameplayTagContainer TargetTags;
+			Data.Target.AbilityActorInfo->AbilitySystemComponent->GetOwnedGameplayTags(TargetTags);
+
+			// 면역 태그(State.Boss.Immune.Stagger)가 있다면 무력화 수치 무시
+			if (TargetTags.HasTag(MyGameplayTags::State_Boss_Immune_Stagger)) // 태그 이름은 실제 정의에 맞춰 수정
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[Stagger] %s is IMMUNE to Stagger! Ignoring value: %.1f"),
+					*TargetActor->GetName(), LocalIncomingStagger);
+				return; // 여기서 함수 종료 -> 게이지 차감 안 함
+			}
+		}
+		if (LocalIncomingStagger > 0.0f)
+		{
+			const float CurrentStagger = GetStagger();
+			const float MaxStaggerValue = GetMaxStagger();
+
+			// 차감 계산
+			const float NewStagger = FMath::Clamp(CurrentStagger - LocalIncomingStagger, 0.0f, MaxStaggerValue);
+			SetStagger(NewStagger);
+
+
+			UE_LOG(LogTemp, Warning, TEXT("[Stagger] %s : -%.1f (Current: %.1f / Max: %.1f)"),
+				TargetActor ? *TargetActor->GetName() : TEXT("None"),
+				LocalIncomingStagger,
+				NewStagger,
+				MaxStaggerValue);
+
+			// 무력화 발생 체크
+			if (NewStagger <= 0.0f)
+			{
+				if (TargetActor)
+				{
+					FGameplayTagContainer TargetTags;
+					Data.Target.AbilityActorInfo->AbilitySystemComponent->GetOwnedGameplayTags(TargetTags);
+
+					if (!TargetTags.HasTag(MyGameplayTags::State_Boss_Staggered))
+					{
+						UE_LOG(LogTemp, Error, TEXT("[Stagger] !!! BOSS STAGGERED !!!"));
+
+						FGameplayEventData Payload;
+						Payload.EventTag = MyGameplayTags::Event_Boss_Staggered;
+						Payload.Target = TargetActor;
+						UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(TargetActor, MyGameplayTags::Event_Boss_Staggered, Payload);
+					}
+				}
+			}
+		}
+	}
 }
 
 // Max값 변경 시 현재값 비율 조정 헬퍼 함수
@@ -185,6 +254,11 @@ void UMyAttributeSet::AdjustAttributeForMaxChange(FGameplayAttributeData& Affect
 
 		AbilityComp->ApplyModToAttributeUnsafe(AffectedAttributeProperty, EGameplayModOp::Additive, NewDelta);
 	}
+}
+
+void UMyAttributeSet::OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, MoveSpeed, OldMoveSpeed);
 }
 
 void UMyAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)

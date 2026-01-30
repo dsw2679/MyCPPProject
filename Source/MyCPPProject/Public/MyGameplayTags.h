@@ -39,4 +39,9 @@ namespace MyGameplayTags
 	// 상태 및 이벤트 태그
 	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Boss_Dashing);          // 돌진 중 상태 판별용
 	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Boss_Hit_Speedburst);   // 돌진 충돌 시 이벤트 발생용
+	
+	// 무력화(Stagger) 관련
+	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Boss_Staggered);
+	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Boss_Staggered);
+	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Boss_Immune_Stagger);
 }

@@ -19,7 +19,7 @@ Sevarog 보유 모션 (
 (특수 체력 40%)Soul_Siphon - 플레이어에게 저주, 
 (플레이어 다운시)Subjugation - 플레이어 발밑에 장판 생성, 
 (일반콤보)Swing1, Swing2,  Swing3 - 보스 일반 연계 콤보, 
-(특수 체력 10%)Ultimate_Swing - 타게팅하다 순식간에 다가와 플레이어를 날리는 공격을 함
+(특수 체력 10%)Ultimate_Swing - 타게팅모션 보유
 )
 
 플레이어 : Contents/ParagonKwang
@@ -160,36 +160,80 @@ kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 �
  * 역할: 캐릭터가 스폰되면 ExperienceManager에게 PawnData를 달라고 요청한 뒤, GAS 초기화(InitAbilityActorInfo) + 스킬 부여(GrantAbility) + 입력 바인딩(BindInput)을 수행합니다.
  * 결과: 기존 AMyCPPProjectCharacter에 있던 복잡한 로직들이 싹 사라지고 이 컴포넌트로 이동합니다.
 
-[어제의 작업 요약: 보스 특수 패턴 구현 (Phase 2 & 3)]
+# 주간 요약 (2주차)
 
-1. 보스 특수 패턴 (70%): Pointing (랜덤 장판)
- * 구현 방식:
-     * GameplayAbility_Boss에 `StartZoneLoop` 함수(C++ 재귀 타이머) 추가.
-     * Stateless 구조를 위해 멤버 변수 대신 람다 캡처로 상태 관리.
-     * GA_Boss_Pointing (BP)에서 몽타주와 함께 해당 함수 호출.
-     * 몽타주는 "정재생 + 역재생" 시퀀스를 결합하여 자연스러운 루프 모션 구현.
- * 이펙트 최적화:
-     * 장판(Decal) 중첩 문제를 해결하기 위해 GC_..._Pointing에서 직접 렌더링하지 않고, 별도의 액터(`BP_Pointing_Decal`)를 Spawn하는 방식으로 변경.
-     * Expose on Spawn 변수를 통해 크기와 시간을 동적으로 전달.
+1. 플레이어 캐릭터 (Kwang) : 전투 시스템 완성
+GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평타, 회피를 모두 구현하였으며, '로스트아크' 특유의 조작감을 살리기 위한 디테일한 로직을 C++로 완성했습니다.
+    
+      스킬 메커니즘 구현:
+    
+    - 콤보 (Q, 평타): 선입력(Input Buffering) 및 애니메이션 캔슬 지원.
+    - 차징 (F): GetRealTimeSeconds를 활용한 차징 단계별(일반/오버차지) 분기 처리.
+    - 홀딩 (S): Wait Input Release를 활용한 키 지속형 스킬 구현.
+    - 지점 (E): GetHeroCursorHit을 통한 마우스 커서 위치 장판 소환(AMyAoEActor).
+    - 이동/돌진 (A, Space): 루트 모션 활용 및 마우스 방향 회전(RotateToCursor) 적용.
+    - 공중 콤보 (R): LaunchCharacter 및 중력 조절로 도약/강습 구현.
+2. 시스템 아키텍처 & UI : Lyra 스타일 도입. 확장성과 유지보수성을 고려한 Lyra 프레임워크의 철학(Modular, Decoupling)을 프로젝트에 이식했습니다.
+- UI 시스템 구축:
+    - PrimaryGameLayout 도입으로 레이어(Game, Menu, Modal) 기반 관리 시스템 구축.
+    - CommonUserWidget 기반 HUD 및 보스 체력바 구현.
+- 느슨한 결합 (Decoupling):
+    - GameplayMessageSubsystem을 활용하여 보스(Actor)와 UI(Widget) 간의 직접 참조를 끊고 메시지 기반으로 통신하도록 설계.
+    - 초기화 타이밍 이슈(Race Condition) 해결.
+- 데이터 관리:
+    - 싱글톤 패턴의 태그 관리 클래스(FMyGameplayTags) 도입.
+3. 보스 몬스터 (Sevarog) : 기반 마련
+보스전 진행을 위한 기초 공사를 마쳤습니다.
+- 기본 세팅: AModularCharacter 상속 및 GAS(ASC, AttributeSet) 연동 완료.
+- 판정 시스템: AnimNotifyState를 C++로 확장하여 구체(Sphere), 부채꼴(Cone), 광역(Radial) 등 다양한 피격 판정 로직 구현.
+- 초기화: GE_BossInit을 통한 스탯 초기화 및 UI 연동.
 
-2. 보스 특수 패턴 (40%): Soul Siphon (저주와 피난처)
- * 기획: 보스가 저주(5초 카운트)를 걸고 플레이어는 안전지대로 피해야 함. 실패 시 즉사.
- * 구현 상태:
-     * `BP_SanctuaryZone`: 플레이어 진입 시 GE_Invincible (무적) 부여, 이탈 시 해제.
-     * `GE_Global_Wipe`: 전체 즉사 데미지. Buff.Invincible 태그가 있으면 무시(Ignore)하도록 설정.
-     * `GA_Boss_SoulSiphon`: 몽타주 재생 -> 안전지대 랜덤 생성(GetRandomLocationInNavigableRadius) -> 5초 대기 -> 전멸기 발동.
-     * AI 제어: MyBTService_PickRandomPattern을 수정하여, 특정 태그(State.Boss.ForceSwing)가 있으면 강제로 `SwingCombo` 패턴만 실행하도록 AI 로직 고정.
 
-3. 보류된 작업 (UI 관련)
- * 카운트다운 UI: 플레이어 머리 위에 5초 카운트다운을 띄우는 GC_Boss_Curse를 작업했으나, 위젯이 보이지 않는 이슈 발생.
- * 원인 추정: Widget Component의 Space 설정(World vs Screen) 문제 또는 소켓(head) 위치 문제로 보임.
- * 결정: UI 관련 디버깅은 추후 UI 전용 작업일에 일괄 처리하기로 함.
+  📅 주간 개발 요약 (3주차: 보스 레이드 핵심 시스템 구축)
 
-[오늘 할 일]
+  1. 코어 아키텍처 및 최적화 (Core & Optimization)
+   * 네이티브 태그 전환: 문자열 기반 검색의 병목 현상을 해결하기 위해 UE_DEFINE_GAMEPLAY_TAG 방식의 Native Gameplay Tags로 전면 교체하여 태그 연산 속도를 극대화했습니다.
+   * 메시지 기반 UI 시스템: UI가 보스를 직접 참조하지 않고 GameplayMessageRouter를 통해 체력 변화를 수신하는 느슨한 결합(Decoupling) 구조를 완성했습니다.
+   * 데이터 주도 설계: MyPawnData를 통해 보스의 스탯, 스킬, 에셋을 데이터 에셋 하나로 관리할 수 있는 확장성을 확보했습니다.
 
+  2. 보스 AI 및 전투 시스템 (AI & Combat)
+   * 지능형 AI (BT): 체력 비율(페이즈), 거리(당기기), 확률(일반 공격)을 스스로 판단하여 패턴을 구사하는 Behavior Tree를 구축했습니다.
+   * C++ 기반 스킬 모듈화: 전조(Telegraph) 생성 및 타격 판정 등 반복되는 로직을 C++ 베이스 클래스(UMyGameplayAbility_Boss)에 최적화하여 구현했습니다.
+   * 일반 패턴 구현: Cast(장판), Clap(3연타), Speedburst(돌진), SwingCombo(연계기), Launchpad(주변 광역) 등 기본 패턴 5종을 완성했습니다.
 
-(특수 체력 10%)Ultimate_Swing - 타게팅하다 순식간에 다가와 플레이어를 날리는 공격을 함
+  3. 페이즈 및 기믹 패턴 (Phase & Mechanics)
+   * 70% 패턴 (Pointing): C++ 재귀 타이머를 활용한 무작위 장판 소환 패턴을 구현했습니다.
+   * 40% 패턴 (Soul Siphon): 안전지대로 피신하지 못할 시 즉사하는 전멸기(Wipe) 기믹을 구현했습니다.
+   * 무력화 시스템 (Stagger): 별도의 무력화 게이지(IncomingStagger)를 구축하고, 플레이어 스킬별로 무력화 수치를 배정하여 전략적인 전투가 가능케 했습니다.
 
-(보스와 일정거리 이상 멀어지면 발동)Emote_pull_MC_T1 - 거리가 너무 멀어질시 강제로 플레이어가 보스앞으로 당겨와짐  패턴 구현
+  4. 고난도 연출 및 기능 (Advanced Features)
+   * 10% 발악 패턴 (Ultimate Swing): 8초 내에 무력화를 시켜야 생존할 수 있는 타임어택 패턴을 구현했습니다.
+   * 당기기 패턴 (Pull): 플레이어가 멀어지면 강제로 포획하여 2단계에 걸쳐 보스 앞으로 끌고 오는 AbilityTask 기반의 연출을 완성했습니다.
+   * CC 및 입력 차단: GE_Stun과 컨트롤러 입력을 물리적으로 씹어버리는 차단 로직을 통해 확실한 군중 제어 효과를 구현했습니다.
 
-참고: `GameplayAbility_Boss.cpp`에는 재귀 타이머 로직이, `MyBTService_PickRandomPattern.cpp`에는 태그 기반 강제 패턴 선택 로직이 추가되어 있습니다."
+  5. 시각 효과 및 타격감 (VFX & Feedback)
+   * 전조 효과 (Telegraph): 공격 범위를 미리 알리는 데칼(Decal)과 타임라인 연출을 적용했습니다.
+   * 패턴별 VFX: 당기기 시 플레이어를 붙잡는 유령 손(Cascade) 이펙트 등 주요 패턴에 시각적 피드백을 추가했습니다.
+
+[어제 한 일]
+
+1. 무력화 시스템 (Stagger System) 구축
+ * Core (C++): MyAttributeSet에 IncomingStagger 메타 속성 로직 추가. 데미지와 분리하여 처리하며, State.Boss.Immune.Stagger 태그 보유 시 무력화 면역 기능 구현.
+ * Ability (Boss): GA_Boss_Stagger 구현. 무력화 발생(Event.Boss.Staggered) 시 발동하여 State.Boss.Staggered 태그를 부여하고, 종료 시 GE_Boss_RecoverStagger로 게이지를 회복시킴.
+ * Ability (Player): AnimNotifyState_AttackHitCheck (C++)를 수정하여 SetByCaller.Stagger 태그로 무력화 수치(StaggerMultiplier)를 전달하도록 기능 확장.
+ * AI (Behavior Tree): 무력화 시 보스가 행동을 멈추도록 Blackboard Decorator (IsStaggered 키) 및 AbilityTask를 활용한 중단 로직 완성. 커스텀 데코레이터 MyBTDecorator_CheckTag도 예비용으로 제작.
+
+2. 보스 10% 패턴: Ultimate Swing (최후의 발악)
+ * 로직: 8초 타임어택형 전멸기 패턴 GA_Boss_UltimateSwing 구현.
+ * 작동 방식: 패턴 시작 시 무력화 게이지 리셋 -> 기 모으기(Charge) 모션 재생 -> 시간 내 무력화 실패 시 전멸기(GE_Wipe_Damage) 발동. 무력화 성공 시(GA_Boss_Stagger 발동) 패턴 자동 취소.
+
+3. Pull 패턴 (강제 끌어오기)
+ * 로직: 플레이어가 멀어지면 GA_Boss_Pull 발동.
+ * 이동 구현: AbilityTask_InterpMoveTo (C++)를 신규 제작하여 2단계(중간->코앞)로 부드럽게 당겨오는 연출 구현.
+ * CC기 (Stun): GE_Stun을 통해 State.Debuff.Stun 태그 부여. SetIgnoreMoveInput 및 IA_Move에서의 태그 검사를 통해 플레이어의 이동 및 입력을 완벽하게 차단.
+ * VFX: GC_Boss_Pull_Hand (Cascade Looping) 제작. 스턴 상태 동안 플레이어 가슴에 유령 손이 붙잡는 이펙트 연출.
+
+[내일 할 일]
+ * 나머지 보스 패턴(Ultimate Swing 폭발, Pointing 장판 등)에 대한 VFX 연동.
+ * UI 제작
+
