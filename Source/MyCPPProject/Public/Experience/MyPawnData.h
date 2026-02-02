@@ -12,6 +12,7 @@ class UGameplayAbility;
 class UMyInputConfig;
 class UInputMappingContext;
 class UNiagaraSystem;
+class UParticleSystem;
 class UGameplayEffect;
 class UAnimMontage;
 
@@ -73,6 +74,10 @@ public:
 	// 프리로드할 이펙트 리스트
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Visuals")
 	TArray<TObjectPtr<UNiagaraSystem>> PreloadVFX;
+	
+	// 프리로드할 파티클(Cascade) 리스트
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Visuals")
+	TArray<TObjectPtr<UParticleSystem>> PreloadParticles;
 
 	// 프리로드할 사운드 리스트
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Audio")

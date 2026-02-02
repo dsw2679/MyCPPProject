@@ -16,6 +16,7 @@
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "NavigationSystem.h"
+#include "Particles/ParticleSystem.h"
 
 
 AMyBossCharacter::AMyBossCharacter()
@@ -195,7 +196,7 @@ void AMyBossCharacter::PreloadAssets()
 
 	UE_LOG(LogTemp, Warning, TEXT("[Boss] Starting Preload for %s"), *GetName());
 
-	// 1. VFX(Niagara) 프리로드
+	// VFX(Niagara) 프리로드
 	// HitEffect 프리로드 (가장 중요)
 	for (auto HitFX : PawnData->OnlyBoss_HitEffect)
 	{
@@ -209,8 +210,16 @@ void AMyBossCharacter::PreloadAssets()
 			UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded VFX: %s"), *VFX->GetName());
 		}
 	}
+	
+	for (auto Particle : PawnData->PreloadParticles)
+	{
+		if (Particle)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded Particle: %s"), *Particle->GetName());
+		}
+	}
 
-	// 2. SFX(Sound) 프리로드
+	// SFX(Sound) 프리로드
 	for (auto SFX : PawnData->PreloadSFX)
 	{
 		if (SFX) {
@@ -218,7 +227,7 @@ void AMyBossCharacter::PreloadAssets()
 		}
 	}
 
-	// 3. GameplayCues 프리로드 (중요: LoadSynchronous 사용)
+	// GameplayCues 프리로드 (중요: LoadSynchronous 사용)
 	for (const TSoftClassPtr<UObject>& CueSoftClass : PawnData->PreloadGameplayCues)
 	{
 		if (!CueSoftClass.IsNull())

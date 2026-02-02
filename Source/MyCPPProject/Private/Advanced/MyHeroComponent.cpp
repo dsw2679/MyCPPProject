@@ -21,6 +21,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/Engine.h"
+#include "Particles/ParticleSystem.h"
 
 UMyHeroComponent::UMyHeroComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -342,6 +343,12 @@ void UMyHeroComponent::PreloadPawnAssets()
     for (auto VFX : PawnData->PreloadVFX)
     {
         if (VFX) UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded VFX: %s"), *VFX->GetName());
+    }
+    
+    // 파티클 프리로드
+    for (auto Particle : PawnData->PreloadParticles)
+    {
+        if (Particle) UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded Particle: %s"), *Particle->GetName());
     }
 
     // SFX 프리로드
