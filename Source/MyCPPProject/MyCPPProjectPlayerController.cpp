@@ -16,7 +16,11 @@
 #include "PrimaryGameLayout.h"
 #include "Blueprint/UserWidget.h"
 #include "Advanced/MyPrimaryGameLayout.h"
+#include "MyGameplayTags.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
+#include "UI/MyUserWidget.h"
+#include "GameFramework/HUD.h"
 
 AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 {
@@ -57,19 +61,52 @@ void AMyCPPProjectPlayerController::BeginPlay()
 	
 	if (IsLocalController() && PrimaryLayoutClass)
 	{
-		// 레이아웃 생성 및 뷰포트 추가
-		UPrimaryGameLayout* RootLayout = CreateWidget<UPrimaryGameLayout>(this, PrimaryLayoutClass);
-		RootLayout->AddToPlayerScreen(0);
-
-		// HUD를 Game 레이어에 Push
-		if (HUDWidgetClass)
+		// 생성 후 'RootLayoutInstance' 변수에 저장
+		RootLayoutInstance = CreateWidget<UPrimaryGameLayout>(this, PrimaryLayoutClass);
+		if (RootLayoutInstance)
 		{
-			// 태그로 스택 찾아서 Push
-			RootLayout->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(
-				FGameplayTag::RequestGameplayTag("UI.Layer.Game"),
-				false,
-				HUDWidgetClass
-			);
+			RootLayoutInstance->AddToPlayerScreen(0);
+
+			// HUD Push 로직
+			if (HUDWidgetClass)
+			{
+				RootLayoutInstance->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(
+					MyGameplayTags::UI_Layer_Game,
+					false,
+					HUDWidgetClass
+				);
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UI Debug] Setup Failed. Condition Check: Local=%d, ClassValid=%d"), IsLocalController(), (PrimaryLayoutClass != nullptr));
+	}
+}
+
+void AMyCPPProjectPlayerController::OnPossess(APawn* aPawn)
+{
+	Super::OnPossess(aPawn);
+	
+	// 로컬 컨트롤러이고 레이아웃이 준비되었다면
+	if (IsLocalController() && RootLayoutInstance)
+	{
+		// RootLayoutInstance를 우리 클래스로 캐스팅
+		if (UMyPrimaryGameLayout* MyRoot = Cast<UMyPrimaryGameLayout>(RootLayoutInstance))
+		{
+			// HUD 찾기
+			if (UCommonActivatableWidget* HUD = MyRoot->GetGameLayerWidget())
+			{
+				// ASC 연결 (변수명 충돌 방지를 위해 'TargetHUD' 사용)
+				if (UMyUserWidget* TargetHUD = Cast<UMyUserWidget>(HUD))
+				{
+					if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(aPawn))
+					{
+						TargetHUD->SetAbilitySystemComponent(ASC);
+						UE_LOG(LogTemp, Warning, TEXT("[UI] OnPossess: HUD Connected Successfully!"));
+					}
+				}
+			}
 		}
 	}
 }

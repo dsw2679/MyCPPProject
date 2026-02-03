@@ -14,7 +14,4 @@ class MYCPPPROJECT_API UMyHUDLayout : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 	
-public:
-	
-protected:
 };

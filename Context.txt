@@ -215,7 +215,7 @@ GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평�
    * 전조 효과 (Telegraph): 공격 범위를 미리 알리는 데칼(Decal)과 타임라인 연출을 적용했습니다.
    * 패턴별 VFX: 당기기 시 플레이어를 붙잡는 유령 손(Cascade) 이펙트 등 주요 패턴에 시각적 피드백을 추가했습니다.
 
-[어제 한 일]
+[2주차 마지막일]
 
 1. 무력화 시스템 (Stagger System) 구축
  * Core (C++): MyAttributeSet에 IncomingStagger 메타 속성 로직 추가. 데미지와 분리하여 처리하며, State.Boss.Immune.Stagger 태그 보유 시 무력화 면역 기능 구현.
@@ -233,8 +233,39 @@ GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평�
  * CC기 (Stun): GE_Stun을 통해 State.Debuff.Stun 태그 부여. SetIgnoreMoveInput 및 IA_Move에서의 태그 검사를 통해 플레이어의 이동 및 입력을 완벽하게 차단.
  * VFX: GC_Boss_Pull_Hand (Cascade Looping) 제작. 스턴 상태 동안 플레이어 가슴에 유령 손이 붙잡는 이펙트 연출.
 
+[어제 한 일]
+
+  1. 보스 패턴: Speedburst (돌진)
+   * 이슈: Telegraph(전조) 데칼이 처음에만 보이고 이후 스킵되는 현상 해결.
+       * 원인 1: 타임라인 키값이 비어있어 Finished 이벤트가 불안정하게 호출됨 -> DestroyActor 누락.
+       * 원인 2: 전조 액터(GC_Pointing_Decal) 파괴 후에도 장판 액터(GC_Pointing_Zone)에 똑같은 데칼이 남아있어 안 지워진 것처럼 보임.
+   * 해결:
+       * GC_Boss_Telegraph_Speedburst의 타임라인 키값 추가.
+       * GC_Pointing_Zone에서 불필요한 데칼 컴포넌트 삭제 및 VFX(파티클)로 대체.
+       * GA에서 전조 크기(Extent) 조정 및 Allow Multiple Instances 활성화.
+
+  2. 보스 패턴: Meteor (Cast 응용)
+   * 구현: GA_Boss_Basic_Cast 로직 확장.
+       * Telegraph: 기존 ShowTelegraphCircle 함수 재사용.
+       * Meteor: GC_Boss_Meteor_Fall 제작 (GameplayCueNotify_Actor).
+           * OnActive: 하늘(Location + Z)에서 생성 후 타임라인으로 낙하.
+           * Finished: 바닥 도달 시 폭발(ExplosionFX) 및 데미지 판정(ApplyDamageToArea).
+       * Color: 파티클 에셋의 Color Over Life를 수정하여 Sevarog 테마(녹색/청록색)로 변경.
+
+  3. 보스 패턴: Ultimate Swing (10% 전멸기)
+   * 진행 상황: 기능 구현 완료, 이펙트 연출 작업 중.
+   * 구현된 연출:
+       * Charge (기 모으기): GC_Boss_Ultimate_Charge (Looping) -> 보스 몸에 부착.
+       * Explosion (전멸 폭발): GC_Boss_Ultimate_Explosion (Static) -> 화면 전체 타격감 연출 기획 (카메라 앞 이펙트, PostProcess 등).
+   * 최적화: GameplayCueNotify_Actor에서 매번 Cast하는 비용을 줄이고 편의성을 높이기 위해 C++ 베이스 클래스(AMyGameplayCueActor_Looping) 제작 제안됨.
+
+  4. 시스템 수정 (C++)
+   * MyPawnData: PreloadVFX 외에 PreloadParticles(Cascade) 지원 추가.
+   * MyBossCharacter: PreloadParticles 로드 로직 추가 및 GameplayAbility_Boss 함수들 점검.
+   * GameplayTags: Ability.ActivateFail.Cost 태그 누락으로 인한 Ensure 오류 해결 가이드 (Project Settings에 추가 필요).
+
 [오늘 할 일]
- * MyPawnData에 PreloadVFX(Category)에서 파티클에셋 프리로드 추가
- * 나머지 보스 패턴(Ultimate Swing 폭발, Pointing 장판 등)에 대한 VFX 연동.
- * UI 제작
+1. UI 제작
+    - 보스 체력바, 무력화 게이지, 타임어택 카운트다운 위젯 구현 및 연동.
+    - 로스트아크형식의 플레이어 스킬, 체력, 마나, 소모품칸 화면 하단에 구현
 

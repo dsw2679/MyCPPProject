@@ -88,6 +88,8 @@ protected:
 	
 	virtual void BeginPlay() override;
 	
+	virtual void OnPossess(APawn* aPawn) override;
+	
 	/** Input handlers */
 	void OnInputStarted();
 	void OnSetDestinationTriggered();

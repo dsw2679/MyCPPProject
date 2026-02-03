@@ -6,6 +6,11 @@
 
 namespace MyGameplayTags
 {
+	// UI 레이어 태그 정의
+	UE_DEFINE_GAMEPLAY_TAG(UI_Layer_Game, "UI.Layer.Game");
+	UE_DEFINE_GAMEPLAY_TAG(UI_Layer_Menu, "UI.Layer.Menu");
+	UE_DEFINE_GAMEPLAY_TAG(UI_Layer_Modal, "UI.Layer.Modal");
+	
 	// 여기서 실제 문자열과 매칭하여 정의합니다.
 	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_Spawned, "Message.Boss.Spawned");
 	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_HealthChanged, "Message.Boss.HealthChanged");
@@ -36,4 +41,15 @@ namespace MyGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Staggered, "State.Boss.Staggered");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Boss_Staggered, "Event.Boss.Staggered");
 	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Immune_Stagger, "State.Boss.Immune.Stagger");
+	
+	// 플레이어 스킬 및 쿨타임 관련
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_Q, "Cooldown.Skill.Q");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_W, "Cooldown.Skill.W");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_E, "Cooldown.Skill.E");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_R, "Cooldown.Skill.R");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_A, "Cooldown.Skill.A");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_S, "Cooldown.Skill.S");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_D, "Cooldown.Skill.D");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_F, "Cooldown.Skill.F");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_Space, "Cooldown.Skill.Space");
 }

@@ -3,8 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonUserWidget.h"
-#include "GameplayEffectTypes.h"
+#include "UI/MyUserWidget.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "Message/MyBossMessageStruct.h"
 #include "MyBossHealthWidget.generated.h"
@@ -16,41 +15,26 @@ class UAbilitySystemComponent;
  * 보스 체력바 위젯
  */
 UCLASS(Abstract)
-class MYCPPPROJECT_API UMyBossHealthWidget : public UCommonUserWidget
+class MYCPPPROJECT_API UMyBossHealthWidget : public UMyUserWidget
 {
 	GENERATED_BODY()
 	
 public:
-	// 보스의 ASC를 위젯에 연결하고 이벤트를 바인딩합니다.
-	UFUNCTION(BlueprintCallable, Category = "BossUI")
-	void SetAbilitySystemComponent(UAbilitySystemComponent* InASC);
-
-protected:
-	// 어트리뷰트 변경 시 호출될 콜백
-	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
-	virtual void OnMaxHealthChanged(const FOnAttributeChangeData& Data);
-	virtual void OnStaggerChanged(const FOnAttributeChangeData& Data);
-	virtual void OnMaxStaggerChanged(const FOnAttributeChangeData& Data);
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
-	void OnBossSpawned(FGameplayTag Channel, const FMyBossMessageStruct& Payload);
+protected:
+	// 메시지 수신 리스너 핸들 (위젯 파괴 시 등록 해제용)
+	FGameplayMessageListenerHandle HealthMessageHandle;
 
-	FGameplayMessageListenerHandle BossSpawnListenerHandle;
-	
-	// 메시지 수신 시 호출될 함수
-	void OnHealthMessageReceived(FGameplayTag Channel, const FMyBossHealthMessage& Payload);
+	// 체력 변경 메시지 수신 시 호출되는 함수
+	void OnHealthMessageReceived(FGameplayTag Channel, const FMyBossHealthMessage& Message);
 
-	// 리스너 핸들 관리
-	FGameplayMessageListenerHandle HealthChangedListenerHandle;
-	// 블루프린트에서 실제 UI를 갱신할 때 사용
-	UFUNCTION(BlueprintImplementableEvent, Category = "BossUI")
-	void UpdateHealth(float CurrentHealth, float MaxHealth);
+	// BP에서 실제 프로그레스 바(Progress Bar) 등을 갱신할 이벤트
+	UFUNCTION(BlueprintImplementableEvent, Category = "Boss UI")
+	void BP_UpdateBossHealth(float CurrentHealth, float MaxHealth);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "BossUI")
-	void UpdateStagger(float CurrentStagger, float MaxStagger);
-
-	// 약참조로 ASC 보관
-	UPROPERTY()
-	TWeakObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+	// (확장용) 보스 이름 설정 등을 위한 이벤트
+	UFUNCTION(BlueprintImplementableEvent, Category = "Boss UI")
+	void BP_SetBossInfo(const FString& BossName);
 };
