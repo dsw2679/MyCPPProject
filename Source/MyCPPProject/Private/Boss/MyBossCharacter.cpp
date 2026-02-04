@@ -110,6 +110,17 @@ void AMyBossCharacter::PossessedBy(AController* NewController)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
+		if (const UMyAttributeSet* AS = Cast<UMyAttributeSet>(AttributeSet))
+		{
+			// 체력 변화 감지 등록
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AS->GetHealthAttribute())
+				.AddUObject(this, &AMyBossCharacter::OnHealthChanged);
+
+			// 무력화(IncomingStagger) 변화 감지 등록
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AS->GetStaggerAttribute())
+				.AddUObject(this, &AMyBossCharacter::OnStaggerChanged);
+		}
+		
 		// PawnData가 있다면 스킬(Ability) 부여
 		if (PawnData && HasAuthority())
 		{
@@ -125,7 +136,30 @@ void AMyBossCharacter::PossessedBy(AController* NewController)
 					AbilitySystemComponent->GiveAbility(Spec);
 				}
 			} 
+			for (const TSubclassOf<UGameplayEffect>& GEClass : PawnData->StartupGameplayEffects)
+			{
+				if (GEClass)
+				{
+					FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+					Context.AddSourceObject(this);
+					FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(GEClass, 1.0f, Context);
+					if (Spec.IsValid())
+					{
+						AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+					}
+				}
+			}
 		}
+	}
+	
+	if (PawnData)
+	{
+		FMyBossInfoMessage InfoMsg;
+		InfoMsg.BossName = PawnData->BossName;
+		InfoMsg.EnrageTimeLimit = PawnData->EnrageTimeLimit;
+
+		UGameplayMessageSubsystem::Get(this).BroadcastMessage(
+			MyGameplayTags::Message_Boss_InitInfo, InfoMsg);
 	}
 
 	// 메시지 방송 (기존 코드 유지)
@@ -197,7 +231,7 @@ void AMyBossCharacter::PreloadAssets()
 	UE_LOG(LogTemp, Warning, TEXT("[Boss] Starting Preload for %s"), *GetName());
 
 	// VFX(Niagara) 프리로드
-	// HitEffect 프리로드 (가장 중요)
+	// HitEffect 프리로드
 	for (auto HitFX : PawnData->OnlyBoss_HitEffect)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[Boss] Preloaded HitEffect: %s"), *HitFX->GetName());
@@ -227,7 +261,7 @@ void AMyBossCharacter::PreloadAssets()
 		}
 	}
 
-	// GameplayCues 프리로드 (중요: LoadSynchronous 사용)
+	// GameplayCues 프리로드 (LoadSynchronous 사용)
 	for (const TSoftClassPtr<UObject>& CueSoftClass : PawnData->PreloadGameplayCues)
 	{
 		if (!CueSoftClass.IsNull())
@@ -270,6 +304,32 @@ void AMyBossCharacter::OnBossInfoRequested(FGameplayTag Channel, const struct FM
 	Message.BossASC = this->GetAbilitySystemComponent();
 
 	UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Request_BossInfo, Message);
+}
+
+void AMyBossCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
+{
+	if (const UMyAttributeSet* AS = Cast<UMyAttributeSet>(AttributeSet))
+	{
+		FMyBossHealthMessage Msg;
+		Msg.CurrentHealth = Data.NewValue;
+		Msg.MaxHealth = AS->GetMaxHealth(); // AttributeSet에서 최대 체력 가져옴
+
+		UGameplayMessageSubsystem::Get(this).BroadcastMessage(
+			MyGameplayTags::Message_Boss_HealthChanged, Msg);
+	}
+}
+
+void AMyBossCharacter::OnStaggerChanged(const FOnAttributeChangeData& Data)
+{
+	if (const UMyAttributeSet* AS = Cast<UMyAttributeSet>(AttributeSet))
+	{
+		FMyBossStaggerMessage Msg;
+		Msg.CurrentStagger = Data.NewValue;
+		Msg.MaxStagger = AS->GetMaxStagger();
+
+		UGameplayMessageSubsystem::Get(this).BroadcastMessage(
+			MyGameplayTags::Message_Boss_StaggerChanged, Msg);
+	}
 }
 
 void AMyBossCharacter::OnDashTagChanged(const FGameplayTag Tag, int32 NewCount)

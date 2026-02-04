@@ -94,4 +94,12 @@ public:
 	// 게임 시작 시 적용할 GameplayEffect 목록 (스텟 초기화 등)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Abilities")
 	TArray<TSubclassOf<UGameplayEffect>> StartupGameplayEffects;
+	
+	// 보스 이름 (UI 표시용)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Info")
+	FText BossName;
+
+	// 광폭화 제한 시간 (초 단위, 0이면 무제한)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Info")
+	float EnrageTimeLimit = 0.0f;
 };

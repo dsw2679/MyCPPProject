@@ -26,13 +26,26 @@ public:
 protected:
 	// 메시지 수신 리스너 핸들 (위젯 파괴 시 등록 해제용)
 	FGameplayMessageListenerHandle HealthMessageHandle;
+	FGameplayMessageListenerHandle StaggerMessageHandle;
+	FGameplayMessageListenerHandle InitInfoMessageHandle;
+	
 
-	// 체력 변경 메시지 수신 시 호출되는 함수
+	// 수치 변경 메시지 수신 시 호출되는 함수
 	void OnHealthMessageReceived(FGameplayTag Channel, const FMyBossHealthMessage& Message);
+	void OnStaggerMessageReceived(FGameplayTag Channel, const FMyBossStaggerMessage& Message);
+	
+	// 보스 이름 호출
+	void OnInitInfoMessageReceived(FGameplayTag Channel, const FMyBossInfoMessage& Message);
 
 	// BP에서 실제 프로그레스 바(Progress Bar) 등을 갱신할 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Boss UI")
 	void BP_UpdateBossHealth(float CurrentHealth, float MaxHealth);
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Boss UI")
+	void BP_UpdateBossStagger(float CurrentStagger, float MaxStagger);
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Boss UI")
+	void BP_InitBossInfo(const FText& BossName, float EnrageTime);
 
 	// (확장용) 보스 이름 설정 등을 위한 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Boss UI")

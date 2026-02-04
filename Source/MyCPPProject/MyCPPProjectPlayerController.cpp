@@ -19,6 +19,7 @@
 #include "MyGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "Advanced/ControllerComponent/MyDamageTextManagerComponent.h"
 #include "UI/MyUserWidget.h"
 #include "GameFramework/HUD.h"
 
@@ -36,6 +37,9 @@ AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 	DefaultMouseCursor = EMouseCursor::Default;
 	CachedDestination = FVector::ZeroVector;
 	FollowTime = 0.f;
+	
+	// 컴포넌트 생성 (헤더에 전방 선언 class UMyDamageTextManagerComponent; 필요)
+	DamageTextManagerComponent = CreateDefaultSubobject<UMyDamageTextManagerComponent>(TEXT("DamageTextManager"));
 }
 
 void AMyCPPProjectPlayerController::MoveToLocation(const FVector& Dest)
@@ -73,14 +77,28 @@ void AMyCPPProjectPlayerController::BeginPlay()
 				RootLayoutInstance->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(
 					MyGameplayTags::UI_Layer_Game,
 					false,
-					HUDWidgetClass
+					HUDWidgetClass,
+					[this](EAsyncWidgetLayerState State, UCommonActivatableWidget* Screen)
+					{
+						// 위젯 로딩 및 푸시가 완료된 시점(AfterPush)에 실행
+						if (State == EAsyncWidgetLayerState::AfterPush)
+						{
+							if (UMyUserWidget* TargetHUD = Cast<UMyUserWidget>(Screen))
+							{
+								// 내 폰(캐릭터)에서 ASC를 찾아 HUD에 연결
+								if (UAbilitySystemComponent* ASC =
+									UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetPawn()))
+								{
+									TargetHUD->SetAbilitySystemComponent(ASC);
+									UE_LOG(LogTemp, Warning,
+									       TEXT("[UI] Async Load Complete: HUD Connected Successfully!"));
+								}
+							}
+						}
+					}
 				);
 			}
 		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("[UI Debug] Setup Failed. Condition Check: Local=%d, ClassValid=%d"), IsLocalController(), (PrimaryLayoutClass != nullptr));
 	}
 }
 

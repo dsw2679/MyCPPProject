@@ -94,12 +94,14 @@ kwang 보유 모션 ( 칼던지고 받기, 회전하며 베기, 칼 앞으로 �
 
   ---
 
-  3. 각성기 (Awakening - V키)
+  3. 각성기 (Awakening - V키) (각성기 보류)
 
+/*
   [V] 뇌신강림 : 라그나로크 (God of Thunder: Ragnarok)
    * 연출: 카메라가 줌아웃되며, 캐릭터가 공중으로 높이 솟구칩니다. 구름 위에서 거대한 뇌신(혹은 거대화된 검)의 형상이 나타나 지상을 향해 멸망의 벼락을 내리꽂습니다.
    * 효과: 화면 전체 범위에 막대한 데미지를 입힙니다.
    * 특수: 사용 후 아이덴티티 게이지 100% 회복.
+*/
 
   ---
 
@@ -233,7 +235,7 @@ GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평�
  * CC기 (Stun): GE_Stun을 통해 State.Debuff.Stun 태그 부여. SetIgnoreMoveInput 및 IA_Move에서의 태그 검사를 통해 플레이어의 이동 및 입력을 완벽하게 차단.
  * VFX: GC_Boss_Pull_Hand (Cascade Looping) 제작. 스턴 상태 동안 플레이어 가슴에 유령 손이 붙잡는 이펙트 연출.
 
-[어제 한 일]
+[이번주 한 일]
 
   1. 보스 패턴: Speedburst (돌진)
    * 이슈: Telegraph(전조) 데칼이 처음에만 보이고 이후 스킵되는 현상 해결.
@@ -264,8 +266,61 @@ GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평�
    * MyBossCharacter: PreloadParticles 로드 로직 추가 및 GameplayAbility_Boss 함수들 점검.
    * GameplayTags: Ability.ActivateFail.Cost 태그 누락으로 인한 Ensure 오류 해결 가이드 (Project Settings에 추가 필요).
 
-[오늘 할 일]
-1. UI 제작
-    - 보스 체력바, 무력화 게이지, 타임어택 카운트다운 위젯 구현 및 연동.
-    - 로스트아크형식의 플레이어 스킬, 체력, 마나, 소모품칸 화면 하단에 구현
+  📅 [어제의 개발 요약: GAS 기반 UI 프레임워크 구축]
+
+  1. 핵심 성과
+   * GAS + UI 완전 연동: AttributeSet(HP, MP)과 GameplayTag(쿨타임)가 UI에 실시간으로 반영되는 시스템을 완성했습니다.
+   * Lyra 스타일 레이어 시스템 적용: CommonUI의 PrimaryGameLayout을 통해 Stack_Game 레이어에 HUD를 자동으로 Push하는 구조를 정착시켰습니다.
+   * 쿨타임 시스템 최적화: C++은 상태 변경(OnCooldownTagChanged)만 알리고, 시각적 갱신(타이머, 숫자, 스와이프)은 블루프린트 위젯(WBP_SkillSlot)이 독자적으로 수행하는 고효율 구조를 구현했습니다.
+
+  2. 작업한 파일 및 클래스
+
+   * C++ Classes (`Source/MyCPPProject/...`)
+       * UMyUserWidget: GAS 속성 바인딩용 기본 UI 클래스. SetAbilitySystemComponent 자동화 로직 포함.
+       * UMyPlayerHUDWidget: 플레이어 전용 HUD. 스킬 쿨타임 태그 이벤트를 수신하여 SkillSlotMap에 등록된 슬롯 위젯에 전달.
+       * UMySkillSlotWidget: 개별 스킬 슬롯. 남은 시간(RemainingTime)과 전체 시간(TotalDuration)을 관리.
+       * UMyGaugeWidget: HP/MP 구슬 및 막대바 공용 클래스. 메테리얼(Percent) 제어.
+       * UMyBossHealthWidget: GameplayMessageSubsystem을 통해 보스 체력을 수신하는 느슨한 결합(Decoupling) 위젯.
+       * AMyCPPProjectPlayerController: BeginPlay에서 PrimaryLayout 생성 및 HUD Push, OnPossess에서 UI와 ASC 연결 담당.
+       * MyPrimaryGameLayout: Stack_Game 등의 레이어 위젯을 태그(UI.Layer.*)와 연결.
+       * MyGameplayTags: 쿨타임(Cooldown.Skill.*) 및 UI 레이어 태그 등록.
+
+   * Blueprints (UMG)
+       * WBP_MyPrimaryLayout: 화면 전체를 덮는 최상위 레이아웃. (Stack_Game, Stack_Menu, Stack_Modal 포함).
+       * WBP_MyHUDLayout: 게임 중 표시될 HUD 컨테이너. (WBP_PlayerHUD 포함).
+       * WBP_PlayerHUD: HP/MP 구슬(WBP_HealthOrb)과 스킬 슬롯(WBP_SkillSlot) 배치 및 연결.
+       * WBP_SkillSlot: 쿨타임 숫자 카운트다운(Timer) 및 스와이프 애니메이션(Material) 구현.
+
+   * Materials
+       * M_UI_Gauge: HP/MP 구슬용 프로그레스 메테리얼.
+       * M_UI_CooldownSwipe: VectorToRadialValue를 이용한 시계 방향 쿨타임 스윕 메테리얼.
+
+  3. 해결된 주요 이슈 (Troubleshooting)
+   * HP/MP 부동 현상: OnPossess 이벤트에서 TargetHUD->SetAbilitySystemComponent(ASC)를 호출하여 초기화 타이밍 문제 해결.
+   * 쿨타임 숫자 멈춤: 블루프린트 타이머 중복 실행 방지(Branch) 및 CurrentCooldownEndTime 계산 로직 수정.
+   * 쿨타임 스와이프 미작동: 비율 계산식 (EndTime - CurrentTime) / TotalTime 적용 및 메테리얼 파라미터명(Percent) 일치 확인.
+   * 태그 불일치: GA의 SetByCaller.Cooldown 태그를 Cooldown.Skill.*로 통일하여 C++ 감지 로직 정상화.
+
+  ---
+
+  🚀 [오늘 할일 ]
+
+  현재 상태:
+  플레이어 HUD(체력, 마나, 스킬 쿨타임)는 완벽하게 작동합니다. 보스 체력바 시스템은 C++(MyBossHealthWidget)만 준비되어 있고 시각화는 아직입니다.
+
+  남은 과제 (Next Steps):
+   1. 보스 UI 구현:
+       * 보스 조우(소환 시) 화면 상단 중앙에 체력 및 무력화 게이지 구현.
+       * WBP_BossHealthBar 디자인 및 Message.Boss.HealthChanged 수신 확인.
+       * 무력화 게이지(Stagger Gauge): 보스 체력바 밑에 추가하고 데이터 연동.
+   2. 특수 기믹 UI:
+       * 타임어택(전멸기): 10% 체력 패턴 시 기존 무력화 게이지가 잠기고 보스 밑에 새로운 무력화 게이지 생성.
+   3. 전투 피드백:
+       * 데미지 폰트(Floating Text): 타격 시 데미지 숫자 띄우기 (Niagara 또는 Widget Component 사용).
+   4. 아이템 슬롯:
+       * 배틀 아이템(포션 등) 4칸 구현.
+
+  메모:
+   * MySkillSlotWidget은 C++에서 UpdateCooldown을 직접 호출하므로 WBP_PlayerHUD 그래프에서 별도 연결이 필요 없습니다.
+   * WBP_SkillSlot의 로직은 GetTimeSeconds를 기준으로 정확한 남은 시간을 계산하도록 설계되었습니다.
 

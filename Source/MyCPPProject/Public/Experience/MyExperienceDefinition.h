@@ -18,4 +18,8 @@ public:
 	// 이 Experience에서 사용할 기본 Pawn 데이터
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Experience")
 	TObjectPtr<const UMyPawnData> DefaultPawnData;
+	
+	// 이 Experience에서 사용할 기본 HUD 레이아웃 클래스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Experience")
+	TSubclassOf<class UCommonActivatableWidget> HUDLayoutClass;
 };

@@ -104,14 +104,21 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 			const float NewHealth = FMath::Clamp(OldHealth - FinalDamage, 0.0f, GetMaxHealth());
 			SetHealth(NewHealth);
 			
-			// 체력 변경 메시지 방송
-			FMyBossHealthMessage HealthMsg;
-			HealthMsg.CurrentHealth = NewHealth;
-			HealthMsg.MaxHealth = GetMaxHealth();
-			
-			UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(GetWorld());
-			UGameplayMessageSubsystem::Get(this).BroadcastMessage(MyGameplayTags::Message_Boss_HealthChanged, HealthMsg);
-			
+			AActor* TargetActorForTag = Data.Target.AbilityActorInfo->AvatarActor.Get();
+			if (TargetActorForTag)
+			{
+				// 대상의 ASC를 가져와서 'Data.Boss' 태그가 있는지 확인
+				UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActorForTag);
+				if (TargetASC && TargetASC->HasMatchingGameplayTag(MyGameplayTags::Data_Boss))
+				{
+					FMyBossHealthMessage HealthMsg;
+					HealthMsg.CurrentHealth = NewHealth;
+					HealthMsg.MaxHealth = GetMaxHealth();
+
+					UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(
+						MyGameplayTags::Message_Boss_HealthChanged, HealthMsg);
+				}
+			}
 			
 			// 데미지 로그
 			AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
@@ -123,6 +130,38 @@ void UMyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 					FinalDamage,
 					NewHealth,
 					GetMaxHealth());
+			}
+			
+			// 데미지 폰트 출력 메시지 전송
+			if (FinalDamage > 0.0f && TargetActor)
+			{
+				// 안전한 방식으로 ASC 가져오기
+				UAbilitySystemComponent* TargetASC = Data.Target.AbilityActorInfo->AbilitySystemComponent.Get();
+
+				if (TargetASC)
+				{
+					if (TargetASC->HasMatchingGameplayTag(MyGameplayTags::Data_Boss))
+					{
+						// 보스: 정상 전송
+						FMyDamageMessage DmgMsg;
+						DmgMsg.TargetActor = TargetActor;
+						DmgMsg.DamageAmount = FinalDamage;
+
+						UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(
+							MyGameplayTags::Message_Damage, DmgMsg);
+
+						UE_LOG(LogTemp, Warning, TEXT("[DamageText] Message Sent for BOSS: %s"), *TargetActor->GetName());
+					}
+					else
+					{
+						// 보스 아님 (일반 몹 or 플레이어) -> 여기서도 띄워줘야 한다면 로직 추가 필요
+						UE_LOG(LogTemp, Warning, TEXT("[DamageText] Target %s is NOT Boss (No Tag). Skipping."), *TargetActor->GetName());
+					}
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("[DamageText] Failed to get ASC for %s"), *TargetActor->GetName());
+				}
 			}
 			
 			// 공격자(Source)와 피해자(Target) 파악

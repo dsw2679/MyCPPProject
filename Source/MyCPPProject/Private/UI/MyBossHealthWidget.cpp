@@ -19,6 +19,19 @@ void UMyBossHealthWidget::NativeConstruct()
 		this,
 		&UMyBossHealthWidget::OnHealthMessageReceived
 	);
+	
+	// 무력화 메시지 리스너
+	StaggerMessageHandle = MessageSubsystem.RegisterListener(
+	MyGameplayTags::Message_Boss_StaggerChanged,
+	this,
+	&UMyBossHealthWidget::OnStaggerMessageReceived
+	);
+	
+	InitInfoMessageHandle = MessageSubsystem.RegisterListener(
+	MyGameplayTags::Message_Boss_InitInfo,
+	this,
+	&UMyBossHealthWidget::OnInitInfoMessageReceived
+);
 }
 
 void UMyBossHealthWidget::NativeDestruct()
@@ -26,6 +39,8 @@ void UMyBossHealthWidget::NativeDestruct()
 	// 위젯이 파괴될 때 리스너 해제 (메모리 누수 방지)
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(this);
 	MessageSubsystem.UnregisterListener(HealthMessageHandle);
+	MessageSubsystem.UnregisterListener(StaggerMessageHandle);
+	MessageSubsystem.UnregisterListener(InitInfoMessageHandle);
 
 	Super::NativeDestruct();
 }
@@ -33,4 +48,14 @@ void UMyBossHealthWidget::NativeDestruct()
 void UMyBossHealthWidget::OnHealthMessageReceived(FGameplayTag Channel, const FMyBossHealthMessage& Message)
 {
 	BP_UpdateBossHealth(Message.CurrentHealth, Message.MaxHealth);
+}
+
+void UMyBossHealthWidget::OnStaggerMessageReceived(FGameplayTag Channel, const FMyBossStaggerMessage& Message)
+{
+	BP_UpdateBossStagger(Message.CurrentStagger, Message.MaxStagger);
+}
+
+void UMyBossHealthWidget::OnInitInfoMessageReceived(FGameplayTag Channel, const FMyBossInfoMessage& Message)
+{
+	BP_InitBossInfo(Message.BossName, Message.EnrageTimeLimit);
 }

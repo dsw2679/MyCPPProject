@@ -3,6 +3,7 @@
 
 #include "UI/MyPlayerHUDWidget.h"
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemGlobals.h"
 #include "Advanced/MyAttributeSet.h"
 #include "MyGameplayTags.h"
 #include "UI/MySkillSlotWidget.h"
@@ -49,6 +50,19 @@ void UMyPlayerHUDWidget::NativeConstruct()
 	if (Slot_S) SkillSlotMap.Add(MyGameplayTags::Cooldown_Skill_S, Slot_S);
 	if (Slot_D) SkillSlotMap.Add(MyGameplayTags::Cooldown_Skill_D, Slot_D);
 	if (Slot_F) SkillSlotMap.Add(MyGameplayTags::Cooldown_Skill_F, Slot_F);
+
+	// 안전장치: 컨트롤러에서 설정해주지 않았거나 타이밍이 늦었을 경우, 스스로 찾아서 연결
+	if (!AbilitySystemComponent.IsValid())
+	{
+		if (APawn* OwningPawn = GetOwningPlayerPawn())
+		{
+			if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwningPawn))
+			{
+				SetAbilitySystemComponent(ASC);
+				UE_LOG(LogTemp, Warning, TEXT("[UI] MyPlayerHUDWidget: Found ASC in NativeConstruct and Connected."));
+			}
+		}
+	}
 }
 
 void UMyPlayerHUDWidget::OnAttributeChanged(const FGameplayAttribute& Attribute, float NewValue)

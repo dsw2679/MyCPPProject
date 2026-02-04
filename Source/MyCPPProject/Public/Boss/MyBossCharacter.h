@@ -6,6 +6,7 @@
 #include "ModularCharacter.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
+#include "GameplayEffectTypes.h"
 #include "MyBossCharacter.generated.h"
 
 class UAbilitySystemComponent;
@@ -77,6 +78,11 @@ protected:
 
 	// 요청이 오면 실행될 함수
 	void OnBossInfoRequested(FGameplayTag Channel, const struct FMyBossMessageStruct& Payload);
+	
+	// 속성(HP, Stagger) 변화 감지용 함수
+	void OnHealthChanged(const FOnAttributeChangeData& Data);
+	void OnStaggerChanged(const FOnAttributeChangeData& Data);
+	
 };
 
 

@@ -38,3 +38,47 @@ struct FMyBossHealthMessage
 	UPROPERTY(BlueprintReadWrite, Category = "Boss")
 	float MaxHealth = 0.0f;
 };
+
+USTRUCT(BlueprintType)
+struct FMyBossStaggerMessage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Boss")
+	float CurrentStagger = 0.0f;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Boss")
+	float MaxStagger = 0.0f;
+};
+
+USTRUCT(BlueprintType)
+struct FMyBossInfoMessage
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Boss")
+	FText BossName;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Boss")
+	float EnrageTimeLimit = 0.0f;
+	
+};
+
+USTRUCT(BlueprintType)
+struct FMyDamageMessage
+{
+	GENERATED_BODY()
+
+	// (위치 파악용)
+	UPROPERTY(BlueprintReadWrite, Category = "Combat")
+	TObjectPtr<AActor> TargetActor = nullptr;
+
+	// 데미지 수치
+	UPROPERTY(BlueprintReadWrite, Category = "Combat")
+	float DamageAmount = 0.0f;
+
+	// 크리티컬 여부 (UI 연출용)
+	UPROPERTY(BlueprintReadWrite, Category = "Combat")
+	bool bIsCritical = false;
+	
+};

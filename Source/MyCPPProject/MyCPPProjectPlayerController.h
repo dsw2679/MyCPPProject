@@ -3,14 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-//#include "Templates/SubclassOf.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "GameFramework/PlayerController.h"
+#include "Message/MyBossMessageStruct.h"
 #include "MyCPPProjectPlayerController.generated.h"
 
 class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
 class UPathFollowingComponent;
+class UMyDamageTextManagerComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -72,6 +74,10 @@ protected:
 	// 생성된 루트 레이아웃 인스턴스 보관용
 	UPROPERTY()
 	TObjectPtr<class UPrimaryGameLayout> RootLayoutInstance;
+	
+	// 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UMyDamageTextManagerComponent> DamageTextManagerComponent;
 
 public:
 
@@ -99,6 +105,7 @@ protected:
 
 	/** Helper function to get the move destination */
 	void UpdateCachedDestination();
+	
 };
 
 

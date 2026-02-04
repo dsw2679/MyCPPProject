@@ -27,7 +27,7 @@ protected:
 
 	// 쿨타임 태그 변경 감지용 (Q, W, E 등 스킬 쿨타임 표시)
 	virtual void OnCooldownTagChanged(const FGameplayTag Tag, int32 NewCount);
-	
+
 	// 바인딩할 스킬 슬롯들
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UMySkillSlotWidget> Slot_Q;

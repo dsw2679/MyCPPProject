@@ -16,7 +16,12 @@ namespace MyGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_HealthChanged, "Message.Boss.HealthChanged");
 	UE_DEFINE_GAMEPLAY_TAG(Message_Request_BossInfo, "Message.Request.BossInfo");
 	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_Dead, "Message.Boss.Dead");
+	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_StaggerChanged, "Message.Boss.StaggerChanged");
+	UE_DEFINE_GAMEPLAY_TAG(Message_Boss_InitInfo, "Message.Boss.InitInfo");
+	UE_DEFINE_GAMEPLAY_TAG(Message_Damage, "Message.Damage");
 	
+	UE_DEFINE_GAMEPLAY_TAG(Data_Boss, "Data.Boss");
+
 	UE_DEFINE_GAMEPLAY_TAG(Effect_Hit_Stun, "Effect.Hit.Stun");
 	UE_DEFINE_GAMEPLAY_TAG(Effect_Hit_Knockdown, "Effect.Hit.Knockdown");
 	UE_DEFINE_GAMEPLAY_TAG(Effect_Hit_Knockback, "Effect.Hit.Knockback");
@@ -37,7 +42,6 @@ namespace MyGameplayTags
 	// 상태 태그
 	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Dashing, "State.Boss.Dashing");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Boss_Hit_Speedburst, "Event.Boss.Hit.Speedburst");
-	
 	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Staggered, "State.Boss.Staggered");
 	UE_DEFINE_GAMEPLAY_TAG(Event_Boss_Staggered, "Event.Boss.Staggered");
 	UE_DEFINE_GAMEPLAY_TAG(State_Boss_Immune_Stagger, "State.Boss.Immune.Stagger");
