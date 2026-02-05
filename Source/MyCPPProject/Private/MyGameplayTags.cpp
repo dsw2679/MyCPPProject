@@ -56,4 +56,13 @@ namespace MyGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_D, "Cooldown.Skill.D");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_F, "Cooldown.Skill.F");
 	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Skill_Space, "Cooldown.Skill.Space");
+	
+	// 아이템 쿨타임 정의
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Item_1, "Cooldown.Item.1");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Item_2, "Cooldown.Item.2");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Item_3, "Cooldown.Item.3");
+	UE_DEFINE_GAMEPLAY_TAG(Cooldown_Item_4, "Cooldown.Item.4");
+	
+	// 인벤토리 메시지 정의
+	UE_DEFINE_GAMEPLAY_TAG(Message_Inventory_Updated, "Message.Inventory.Updated");
 }

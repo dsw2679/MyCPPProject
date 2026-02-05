@@ -50,7 +50,7 @@ void UGameplayAbility_Boss::ApplyDamageToArea(FVector CenterLocation, float Radi
 	);
 
 	// 디버그용 그리기 (빨간 원)
-	DrawDebugSphere(GetWorld(), CenterLocation, Radius, 12, FColor::Red, false, 2.0f);
+	//DrawDebugSphere(GetWorld(), CenterLocation, Radius, 12, FColor::Red, false, 2.0f);
 
 	if (bHit)
 	{
@@ -176,7 +176,7 @@ void UGameplayAbility_Boss::ApplyDamageToRect(FVector CenterLocation, FRotator R
 	);
 
 	// 디버그용 박스 그리기 (보라색)
-	DrawDebugBox(GetWorld(), CenterLocation, Extent, Rotation.Quaternion(), FColor::Red, false, 2.0f);
+	//DrawDebugBox(GetWorld(), CenterLocation, Extent, Rotation.Quaternion(), FColor::Red, false, 2.0f);
 
 	if (bHit)
 	{
@@ -269,13 +269,13 @@ void UGameplayAbility_Boss::ApplyDamageToCone(FVector CenterLocation, FRotator R
 	// 디버그: 부채꼴 모양 그리기 (대략적인 표현)
 	// 중심선
 	FVector Forward = Rotation.Vector();
-	DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + Forward * Radius, FColor::Red, false, 2.0f);
+	//DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + Forward * Radius, FColor::Red, false, 2.0f);
 
 	// 부채꼴 양 끝선 (간단 디버그용)
 	FVector LeftDir = Forward.RotateAngleAxis(-HalfAngle, FVector::UpVector);
 	FVector RightDir = Forward.RotateAngleAxis(HalfAngle, FVector::UpVector);
-	DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + LeftDir * Radius, FColor::Yellow, false, 2.0f);
-	DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + RightDir * Radius, FColor::Yellow, false, 2.0f);
+	//DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + LeftDir * Radius, FColor::Yellow, false, 2.0f);
+	//DrawDebugLine(GetWorld(), CenterLocation, CenterLocation + RightDir * Radius, FColor::Yellow, false, 2.0f);
 
 
 	if (bHit)
@@ -312,8 +312,7 @@ void UGameplayAbility_Boss::ApplyDamageToCone(FVector CenterLocation, FRotator R
 						TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
 						// 디버그: 맞은 놈 표시
-						DrawDebugSphere(GetWorld(), HitActor->GetActorLocation(), 30.0f, 12, FColor::Green, false,
-						                1.0f);
+						//DrawDebugSphere(GetWorld(), HitActor->GetActorLocation(), 30.0f, 12, FColor::Green, false, 1.0f);
 					}
 				}
 			}

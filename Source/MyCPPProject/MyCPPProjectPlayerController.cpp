@@ -78,7 +78,7 @@ void AMyCPPProjectPlayerController::BeginPlay()
 					MyGameplayTags::UI_Layer_Game,
 					false,
 					HUDWidgetClass,
-					[this](EAsyncWidgetLayerState State, UCommonActivatableWidget* Screen)
+					[this](EAsyncWidgetLayerState State, UCommonUserWidget* Screen)
 					{
 						// 위젯 로딩 및 푸시가 완료된 시점(AfterPush)에 실행
 						if (State == EAsyncWidgetLayerState::AfterPush)

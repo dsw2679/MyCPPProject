@@ -4,6 +4,7 @@
 #include "Advanced/MyCPPProjectPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "Advanced/MyAttributeSet.h"
+#include "Component/MyInventoryComponent.h"
 
 AMyCPPProjectPlayerState::AMyCPPProjectPlayerState()
 {
@@ -15,6 +16,8 @@ AMyCPPProjectPlayerState::AMyCPPProjectPlayerState()
 
 	// AttributeSet 생성
 	AttributeSet = CreateDefaultSubobject<UMyAttributeSet>(TEXT("AttributeSet"));
+	
+	InventoryComponent = CreateDefaultSubobject<UMyInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 UAbilitySystemComponent* AMyCPPProjectPlayerState::GetAbilitySystemComponent() const

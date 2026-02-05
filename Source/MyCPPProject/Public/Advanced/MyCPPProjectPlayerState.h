@@ -11,6 +11,7 @@
 
 class UAbilitySystemComponent;
 class UMyAttributeSet;
+class UMyInventoryComponent;
 
 /**
  * 
@@ -33,6 +34,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
+	// 인벤토리 컴포넌트 추가
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	TObjectPtr<UMyInventoryComponent> InventoryComponent;
+	
 	UPROPERTY()
 	TObjectPtr<UMyAttributeSet> AttributeSet;
 };

@@ -6,6 +6,7 @@
 #include "AbilitySystemGlobals.h"
 #include "Advanced/MyAttributeSet.h"
 #include "MyGameplayTags.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "UI/MySkillSlotWidget.h"
 
 void UMyPlayerHUDWidget::SetAbilitySystemComponent(UAbilitySystemComponent* InASC)
@@ -35,6 +36,18 @@ void UMyPlayerHUDWidget::SetAbilitySystemComponent(UAbilitySystemComponent* InAS
 			InASC->RegisterGameplayTagEvent(Tag, EGameplayTagEventType::NewOrRemoved)
 				 .AddUObject(this, &UMyPlayerHUDWidget::OnCooldownTagChanged);
 		}
+		
+		// 아이템 쿨타임 태그 바인딩
+		TArray<FGameplayTag> ItemTags = {
+			MyGameplayTags::Cooldown_Item_1, MyGameplayTags::Cooldown_Item_2,
+			MyGameplayTags::Cooldown_Item_3, MyGameplayTags::Cooldown_Item_4
+		};
+
+		for (const FGameplayTag& Tag : ItemTags)
+		{
+			InASC->RegisterGameplayTagEvent(Tag, EGameplayTagEventType::NewOrRemoved)
+				 .AddUObject(this, &UMyPlayerHUDWidget::OnCooldownTagChanged);
+		}
 	}
 }
 
@@ -50,6 +63,10 @@ void UMyPlayerHUDWidget::NativeConstruct()
 	if (Slot_S) SkillSlotMap.Add(MyGameplayTags::Cooldown_Skill_S, Slot_S);
 	if (Slot_D) SkillSlotMap.Add(MyGameplayTags::Cooldown_Skill_D, Slot_D);
 	if (Slot_F) SkillSlotMap.Add(MyGameplayTags::Cooldown_Skill_F, Slot_F);
+	if (ItemSlot_1) SkillSlotMap.Add(MyGameplayTags::Cooldown_Item_1, ItemSlot_1);
+	if (ItemSlot_2) SkillSlotMap.Add(MyGameplayTags::Cooldown_Item_2, ItemSlot_2);
+	if (ItemSlot_3) SkillSlotMap.Add(MyGameplayTags::Cooldown_Item_3, ItemSlot_3);
+	if (ItemSlot_4) SkillSlotMap.Add(MyGameplayTags::Cooldown_Item_4, ItemSlot_4);
 
 	// 안전장치: 컨트롤러에서 설정해주지 않았거나 타이밍이 늦었을 경우, 스스로 찾아서 연결
 	if (!AbilitySystemComponent.IsValid())
@@ -62,6 +79,15 @@ void UMyPlayerHUDWidget::NativeConstruct()
 				UE_LOG(LogTemp, Warning, TEXT("[UI] MyPlayerHUDWidget: Found ASC in NativeConstruct and Connected."));
 			}
 		}
+	}
+	
+	// 인벤토리 메시지 구독
+	if (UWorld* World = GetWorld())
+	{
+		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(World);
+
+		// 메시지 수신 시 OnInventoryMessageReceived 호출하도록 연결
+		MessageSubsystem.RegisterListener(MyGameplayTags::Message_Inventory_Updated, this, &UMyPlayerHUDWidget::OnInventoryMessageReceived);
 	}
 }
 
@@ -136,4 +162,9 @@ void UMyPlayerHUDWidget::OnCooldownTagChanged(const FGameplayTag Tag, int32 NewC
 		// 위젯의 변수를 직접 설정하거나 함수를 호출합니다.
 		(*FoundSlot)->UpdateCooldown(bNewCooldownState, RemainingTime, TotalDuration);
 	}
+}
+
+void UMyPlayerHUDWidget::OnInventoryMessageReceived(FGameplayTag Channel, const FMyInventoryMessage& Message)
+{
+	BP_UpdateInventory(Message);
 }

@@ -188,7 +188,7 @@ void AMyBossCharacter::ProcessCollision(AActor* OtherActor, FVector DebugLoc)
 	if (!OtherActor || OtherActor == this) return;
 
 	// 디버그: 무조건 파란색 원
-	DrawDebugSphere(GetWorld(), DebugLoc, 50.0f, 12, FColor::Blue, false, 2.0f);
+	//DrawDebugSphere(GetWorld(), DebugLoc, 50.0f, 12, FColor::Blue, false, 2.0f);
 
 	if (!OtherActor->IsA(ACharacter::StaticClass())) return;
 
@@ -210,7 +210,7 @@ void AMyBossCharacter::ProcessCollision(AActor* OtherActor, FVector DebugLoc)
 		SpeedburstHitActors.Add(OtherActor);
 		
 		// 태그가 있으면 빨간색 원 (데미지 판정)
-		DrawDebugSphere(GetWorld(), DebugLoc, 60.0f, 12, FColor::Red, false, 2.0f);
+		//DrawDebugSphere(GetWorld(), DebugLoc, 60.0f, 12, FColor::Red, false, 2.0f);
 
 		// 이벤트 전송
 		FGameplayEventData Payload;
@@ -220,7 +220,7 @@ void AMyBossCharacter::ProcessCollision(AActor* OtherActor, FVector DebugLoc)
 	else
 	{
 		// 태그가 없으면 녹색 원
-		DrawDebugSphere(GetWorld(), DebugLoc, 40.0f, 12, FColor::Green, false, 2.0f);
+		//DrawDebugSphere(GetWorld(), DebugLoc, 40.0f, 12, FColor::Green, false, 2.0f);
 	}
 }
 

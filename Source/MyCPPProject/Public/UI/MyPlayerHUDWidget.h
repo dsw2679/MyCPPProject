@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "UI/MyUserWidget.h"
 #include "UI/MySkillSlotWidget.h"
+#include "UI/MyItemSlotWidget.h"
+#include "Message/MyInventoryMessages.h"
 #include "MyPlayerHUDWidget.generated.h"
 
 /**
@@ -53,6 +55,19 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UMySkillSlotWidget> Slot_F;
 	
+	// 배틀 아이템 슬롯 4개 추가
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Player UI|Item")
+	TObjectPtr<UMyItemSlotWidget> ItemSlot_1;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Player UI|Item")
+	TObjectPtr<UMyItemSlotWidget> ItemSlot_2;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Player UI|Item")
+	TObjectPtr<UMyItemSlotWidget> ItemSlot_3;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Player UI|Item")
+	TObjectPtr<UMyItemSlotWidget> ItemSlot_4;
+	
 
 	// BP에서 실제 UI 요소를 갱신할 이벤트들
 	UFUNCTION(BlueprintImplementableEvent, Category = "Player UI")
@@ -67,6 +82,13 @@ protected:
 	// 쿨타임 시작/종료를 BP에 알림 (TimeRemaining 등은 BP에서 처리 가능)
 	UFUNCTION(BlueprintImplementableEvent, Category = "Player UI")
 	void BP_OnCooldownChanged(FGameplayTag SkillTag, bool bIsCooldown);
+	
+	// 인벤토리 메시지 수신시 호출될 bp 이벤트
+	UFUNCTION(BlueprintImplementableEvent, Category = "Player UI")
+	void BP_UpdateInventory(const FMyInventoryMessage& Message);
+	
+	// 메시지라우터 수신용 콜백 함수
+	void OnInventoryMessageReceived(FGameplayTag Channel, const FMyInventoryMessage& Message);
 
 private:
 	// 현재 값을 저장하여 비율 계산에 사용
