@@ -17,7 +17,8 @@
 				"ModularGameplay",
 				"CoreUObject",
 				"CommonGame",
-				"AIModule"
+				"AIModule",
+				"UMG"
 			]
 		}
 	],
