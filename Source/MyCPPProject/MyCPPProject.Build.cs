@@ -28,6 +28,7 @@ public class MyCPPProject : ModuleRules
 			"GameplayAbilities",
 			"GameFeatures",
 			"CommonUI",
+			"CommonInput",
 			"CommonGame",
 			"CommonUser",
 			"UIExtension",
@@ -47,8 +48,8 @@ public class MyCPPProject : ModuleRules
 			"MyCPPProject/Variant_TwinStick/UI"
 		});
 
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+		//Uncomment if you are using Slate UI
+		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
 		// Uncomment if you are using online features
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");

@@ -5,14 +5,10 @@
 #include "CommonActivatableWidget.h"
 #include "GameFramework/Pawn.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
-#include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
-#include "MyCPPProjectCharacter.h"
 #include "Engine/World.h"
-#include "EnhancedInputComponent.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Engine/LocalPlayer.h"
-#include "MyCPPProject.h"
 #include "PrimaryGameLayout.h"
 #include "Blueprint/UserWidget.h"
 #include "Advanced/MyPrimaryGameLayout.h"
@@ -21,7 +17,8 @@
 #include "AbilitySystemGlobals.h"
 #include "Advanced/ControllerComponent/MyDamageTextManagerComponent.h"
 #include "UI/MyUserWidget.h"
-#include "GameFramework/HUD.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Widgets/SViewport.h"
 
 AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 {
@@ -63,6 +60,14 @@ void AMyCPPProjectPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// 쿼터뷰 게임이므로 항상 커서가 보이도록 설정
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+	FInputModeGameAndUI InputMode;
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+	
 	if (IsLocalController() && PrimaryLayoutClass)
 	{
 		// 생성 후 'RootLayoutInstance' 변수에 저장
@@ -100,6 +105,9 @@ void AMyCPPProjectPlayerController::BeginPlay()
 			}
 		}
 	}
+	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::SetInputFocusToGameViewport);
+	
+	UE_LOG(LogTemp, Warning, TEXT("[Input] Scheduled Initial Focus Setup"));
 }
 
 void AMyCPPProjectPlayerController::OnPossess(APawn* aPawn)
@@ -128,6 +136,7 @@ void AMyCPPProjectPlayerController::OnPossess(APawn* aPawn)
 		}
 	}
 }
+
 
 void AMyCPPProjectPlayerController::OnInputStarted()
 {
@@ -210,4 +219,51 @@ void AMyCPPProjectPlayerController::UpdateCachedDestination()
 	{
 		CachedDestination = Hit.Location;
 	}
+}
+
+void AMyCPPProjectPlayerController::ToggleInventory()
+{
+	if (RootLayoutInstance && !InventoryWidgetClass.IsNull())
+	{
+		// Stack_Menu 레이어에 비동기로 위젯을 Push
+		RootLayoutInstance->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(
+			MyGameplayTags::UI_Layer_Menu,
+			true,
+			InventoryWidgetClass
+		);
+	}
+	SetInputFocusToGameViewport();
+}
+
+void AMyCPPProjectPlayerController::SetInputFocusToGameViewport()
+{
+	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
+	{
+		if (UGameViewportClient* ViewportClient = LocalPlayer->ViewportClient)
+		{
+			ViewportClient->SetMouseLockMode(EMouseLockMode::DoNotLock);
+			ViewportClient->SetMouseCaptureMode(EMouseCaptureMode::NoCapture);
+
+			// TSharedPtr<SViewport>를 명시적으로 받습니다.
+			TSharedPtr<SViewport> ViewportWidget = ViewportClient->GetGameViewportWidget();
+
+			// 유효성 검사 후
+			if (ViewportWidget.IsValid())
+			{
+				// SViewport는 SWidget을 상속받으므로 ToSharedRef()로 변환 가능
+				TSharedRef<SWidget> WidgetRef = ViewportWidget.ToSharedRef();
+
+				// 포커스 강제 이동
+				FSlateApplication::Get().SetAllUserFocus(WidgetRef, EFocusCause::SetDirectly);
+				FSlateApplication::Get().ReleaseAllPointerCapture();
+			}
+		}
+	}
+
+	// 3. 입력 모드 갱신
+	bShowMouseCursor = true;
+	FInputModeGameAndUI InputMode;
+	InputMode.SetHideCursorDuringCapture(false);
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
 }

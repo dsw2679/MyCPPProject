@@ -65,4 +65,11 @@ namespace MyGameplayTags
 	
 	// 인벤토리 메시지 정의
 	UE_DEFINE_GAMEPLAY_TAG(Message_Inventory_Updated, "Message.Inventory.Updated");
+	
+	// 인풋 태그
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_UI_Inventory, "InputTag.UI.Inventory");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Item_1, "InputTag.Item.1");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Item_2, "InputTag.Item.2");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Item_3, "InputTag.Item.3");
+	UE_DEFINE_GAMEPLAY_TAG(InputTag_Item_4, "InputTag.Item.4");
 }

@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonUserWidget.h"
 #include "AbilitySystemInterface.h"
 #include "AttributeSet.h"
+#include "CommonActivatableWidget.h"
 #include "GameplayEffectTypes.h"
 #include "MyUserWidget.generated.h"
 
@@ -16,7 +16,7 @@ class UAbilitySystemComponent;
  * AbilitySystemComponent를 설정하고 Attribute 변화를 감지하는 기능 제공
  */
 UCLASS()
-class MYCPPPROJECT_API UMyUserWidget : public UCommonUserWidget
+class MYCPPPROJECT_API UMyUserWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 public:

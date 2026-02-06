@@ -22,6 +22,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/Engine.h"
 #include "Particles/ParticleSystem.h"
+#include "MyGameplayTags.h"
 
 UMyHeroComponent::UMyHeroComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -173,9 +174,15 @@ void UMyHeroComponent::InitializePlayerInput(UInputComponent* PlayerInputCompone
             if (Action.InputTag.MatchesTag(InputTag_Move))
             {
                 // Triggered: 누르고 있는 동안 계속 호출 (드래그 이동 지원)
-                //MyInputComp->BindAction(Action.InputAction, ETriggerEvent::Triggered, this, &ThisClass::Input_MoveToCursor);
                 MyInputComp->BindAction(Action.InputAction, ETriggerEvent::Triggered, this, &ThisClass::Input_Move_Triggered);
                 MyInputComp->BindAction(Action.InputAction, ETriggerEvent::Completed, this, &ThisClass::Input_Move_Released);
+            }
+            else if (Action.InputTag.MatchesTag(MyGameplayTags::InputTag_UI_Inventory))
+            {
+                if (AMyCPPProjectPlayerController* MyPC = Cast<AMyCPPProjectPlayerController>(PC))
+                {
+                    MyInputComp->BindAction(Action.InputAction, ETriggerEvent::Started, MyPC, &AMyCPPProjectPlayerController::ToggleInventory);
+                }
             }
         }
     }

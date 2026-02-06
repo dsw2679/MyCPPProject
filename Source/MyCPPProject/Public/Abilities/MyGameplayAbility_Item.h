@@ -15,13 +15,19 @@ class MYCPPPROJECT_API UMyGameplayAbility_Item : public UGameplayAbility
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
-	int32 SlotIndex = 0;
-	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, 
 		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-	
+
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	int32 SlotIndex = 0;
+
+	// 아이템 실제 효과 구현 (C++ 오버라이드용)
+	virtual void ActivateItemEffect();
+
+	// 입력 태그를 통해 슬롯 인덱스 계산
+	int32 GetSlotIndexFromInputTag() const;
+
 	// 아이템 효과 구현 (블루프린트 작성)
 	UFUNCTION(BlueprintImplementableEvent, Category = "Item")
 	void OnItemEffectTriggered();

@@ -30,4 +30,7 @@ protected:
 	// 하위 위젯: 인벤토리 패널 (BindWidget)
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UCommonUserWidget> WBP_Inventory;
+	
+	// 위젯이 활성화될 때 원하는 입력 설정을 반환합니다.
+	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 };

@@ -24,6 +24,8 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 	
+	virtual void NativeOnActivated() override;
+	
 	// Attribute(스탯) 변경 시 호출됨
 	virtual void OnAttributeChanged(const FGameplayAttribute& Attribute, float NewValue) override;
 
@@ -89,6 +91,9 @@ protected:
 	
 	// 메시지라우터 수신용 콜백 함수
 	void OnInventoryMessageReceived(FGameplayTag Channel, const FMyInventoryMessage& Message);
+	
+	// 입력모드 전환
+	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 
 private:
 	// 현재 값을 저장하여 비율 계산에 사용

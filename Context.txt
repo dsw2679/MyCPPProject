@@ -403,7 +403,7 @@ WBP_ItemSlot: HUD에 표시될 아이콘, 개수, 쿨타임 표시.
 
 
   2. UI 시스템 (CommonUI & UMG)
-   * 통합 관리창: WBP_ShopManagementUI (부모: MyShopManagementWidget - CommonActivatableWidget). ESC 닫기 및 포커스 관리 자동화.
+   * 통합 관리창: WBP_ShopManagementUI (부모: MyShopManagementWidget - CommonActivatableWidget).
    * 상점 시스템: WBP_Shop에서 InitializeShop 함수를 통해 데이터를 주입받아 WBP_InventorySlot을 동적 생성. bIsShopSlot 변수로 가격/개수 텍스트 가시성 제어.
    * 인벤토리 시스템: WBP_Inventory (부모: UMyInventoryWidget). C++에서 OwnedItems를 순회하며 그리드 패널을 자동으로 채우는 로직 구현.
    * HUD 연동: WBP_PlayerHUD 내 4개의 WBP_ItemSlot 배치. UMyItemSlotWidget이 UMySkillSlotWidget을 상속받아 GAS 기반 쿨타임 시각화 기능 공유.
@@ -423,6 +423,7 @@ WBP_ItemSlot: HUD에 표시될 아이콘, 개수, 쿨타임 표시.
 
 
  [오늘 할 일]
+   0. input i -> create widget -> add to viewport로 이어지던 임시 디버그용으로 ui창을 띄우던 방식에서 WBP_MyPrimaryLayout의 Stack_Menu에 push하는 방식으로 변경 (CommonUI 기능 활용해 ESC로 Stack_Game으로 돌아가는것 까지)
    1. 배틀 아이템 어빌리티(GA) 구현: GA_MyItemBase를 상속받아 포션(HP 회복), 수류탄(투척 및 무력화), 시정(무적) 등의 실제 효과 제작.
    2. 아이템 소모 로직: 어빌리티 실행 시 InventoryComponent->ConsumeItem(SlotIndex)를 호출하여 수량 차감 및 0개 시 사용 불가 처리.
    3. 상점 확장: 아이템 구매 시 골드 부족 예외 처리 UI 알림 및 구매 애니메이션 추가.

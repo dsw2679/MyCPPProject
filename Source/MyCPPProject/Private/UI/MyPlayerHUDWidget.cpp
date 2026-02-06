@@ -91,6 +91,12 @@ void UMyPlayerHUDWidget::NativeConstruct()
 	}
 }
 
+void UMyPlayerHUDWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+	
+}
+
 void UMyPlayerHUDWidget::OnAttributeChanged(const FGameplayAttribute& Attribute, float NewValue)
 {
 	Super::OnAttributeChanged(Attribute, NewValue);
@@ -167,4 +173,9 @@ void UMyPlayerHUDWidget::OnCooldownTagChanged(const FGameplayTag Tag, int32 NewC
 void UMyPlayerHUDWidget::OnInventoryMessageReceived(FGameplayTag Channel, const FMyInventoryMessage& Message)
 {
 	BP_UpdateInventory(Message);
+}
+
+TOptional<FUIInputConfig> UMyPlayerHUDWidget::GetDesiredInputConfig() const
+{
+	return FUIInputConfig(ECommonInputMode::All, EMouseCaptureMode::NoCapture);
 }

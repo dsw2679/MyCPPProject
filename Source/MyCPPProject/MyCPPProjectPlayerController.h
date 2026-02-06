@@ -69,8 +69,12 @@ protected:
 
 	// Game 레이어에 띄울 메인 HUD 클래스 (WBP_MyHUDLayout)
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSoftClassPtr<class UCommonActivatableWidget> HUDWidgetClass; // PushAsync를 위해 Soft Class 추천
-
+	TSoftClassPtr<class UCommonActivatableWidget> HUDWidgetClass;
+	
+	// 띄울 인벤토리 위젯 클래스 (WBP_ShopManagementUI)
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSoftClassPtr<UCommonActivatableWidget> InventoryWidgetClass;
+	
 	// 생성된 루트 레이아웃 인스턴스 보관용
 	UPROPERTY()
 	TObjectPtr<class UPrimaryGameLayout> RootLayoutInstance;
@@ -86,6 +90,10 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Lyra|Character")
 	void MoveToLocation(const FVector& Dest);
+	
+	// 인벤토리 토글 함수
+	void ToggleInventory();
+	void SetInputFocusToGameViewport();
 
 protected:
 

@@ -37,6 +37,8 @@ public:
 protected:
 	void BroadcastInventoryMessage();
 	
+	FGameplayTag GetInputTagForSlot(int32 SlotIndex);
+
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	int32 Gold = 1000;
 
