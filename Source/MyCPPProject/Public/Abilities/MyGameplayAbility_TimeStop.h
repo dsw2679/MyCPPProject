@@ -15,7 +15,7 @@ class MYCPPPROJECT_API UMyGameplayAbility_TimeStop : public UMyGameplayAbility_I
 	GENERATED_BODY()
 
 protected:
-	virtual void ActivateItemEffect() override;
+	//virtual void ActivateItemEffect() override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Item")
 	TSubclassOf<UGameplayEffect> TimeStopEffectClass;

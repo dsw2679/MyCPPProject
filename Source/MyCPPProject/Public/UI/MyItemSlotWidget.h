@@ -28,6 +28,13 @@ public:
 	void UpdateItemData(const FMyItemSlotInfo& SlotInfo);
 	
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+	
+	virtual void NativeConstruct() override;
+	void OnInventoryUpdated(FGameplayTag Channel, const FMyInventoryMessage& Message);
+	
+	// 이 위젯이 드래그 중인 비주얼인지 여부
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item UI", meta = (ExposeOnSpawn = "true"))
+	bool bIsDragVisual = false;
 
 protected:
 	// 에디터 위젯과 연결 (이름이 일치해야 함) 
@@ -36,4 +43,8 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> TXT_CountText;
+	
+	// 현재 슬롯에 장착된 아이템 정보를 보관 (드래그 시 사용)
+	UPROPERTY(BlueprintReadOnly, Category = "Item UI")
+	TObjectPtr<const UMyItemDefinition> CurrentItemDef;
 };

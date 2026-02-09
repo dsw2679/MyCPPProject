@@ -5,45 +5,79 @@
 #include "Component/MyInventoryComponent.h"
 #include "MyGameplayTags.h"
 #include "AbilitySystemComponent.h"
+#include "GameFramework/PlayerState.h"
 
-void UMyGameplayAbility_Item::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
-	const FGameplayEventData* TriggerEventData)
+
+UMyGameplayAbility_Item::UMyGameplayAbility_Item()
 {
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-		return;
-	}
+	// 액터당 하나만 만들어서 재사용
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+	
+	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+}
 
-	// 입력 태그를 통해 동적으로 슬롯 인덱스 결정
-	int32 DynamicSlotIndex = GetSlotIndexFromInputTag();
-	if (DynamicSlotIndex != -1)
-	{
-		SlotIndex = DynamicSlotIndex;
-	}
+bool UMyGameplayAbility_Item::ConsumeItem()
+{
+	int32 SlotIndex = GetSlotIndexFromInputTag(); // (이 함수는 유지)
 
-	// 인벤토리 컴포넌트 찾아오기
 	if (AActor* Avatar = GetAvatarActorFromActorInfo())
 	{
-		if (UMyInventoryComponent* InvComp = Avatar->FindComponentByClass<UMyInventoryComponent>())
+		if (APawn* Pawn = Cast<APawn>(Avatar))
 		{
-			// 아이템 소모 시도
-			if (InvComp->ConsumeItem(SlotIndex))
+			if (APlayerState* PS = Pawn->GetPlayerState())
 			{
-				// 성공 시 이펙트 실행
-				ActivateItemEffect();
+				if (UMyInventoryComponent* InvComp = PS->FindComponentByClass<UMyInventoryComponent>())
+				{
+					// 서버 권한 체크 후 소모
+					if (HasAuthority(&CurrentActivationInfo))
+					{
+						return InvComp->ConsumeItem(SlotIndex);
+					}
+					return true; // 클라이언트는 성공 처리
+				}
 			}
 		}
 	}
-
-	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	return false;
 }
 
-void UMyGameplayAbility_Item::ActivateItemEffect()
+const FGameplayTagContainer* UMyGameplayAbility_Item::GetCooldownTags() const
 {
-	// 기본적으로 블루프린트 이벤트 호출
-	OnItemEffectTriggered();
+	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	MutableTags->Reset();
+
+	if (CooldownTag.IsValid())
+	{
+		MutableTags->AddTag(CooldownTag);
+		return MutableTags;
+	}
+	return Super::GetCooldownTags();
+}
+
+void UMyGameplayAbility_Item::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
+	if (CooldownGE)
+	{
+		// 1. 쿨타임 이펙트 스펙 생성
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
+		if (SpecHandle.IsValid())
+		{
+			// 2. [SetByCaller] 쿨타임 시간 주입 (태그: SetByCaller.Cooldown)
+			FGameplayTag DurationTag = FGameplayTag::RequestGameplayTag(FName("SetByCaller.Cooldown"));
+			SpecHandle.Data->SetSetByCallerMagnitude(DurationTag, CooldownDuration);
+
+			// 3. 쿨다운 태그 동적 주입
+			if (CooldownTag.IsValid())
+			{
+				SpecHandle.Data->DynamicGrantedTags.AddTag(CooldownTag);
+			}
+
+			// 4. 적용
+			ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
+		}
+	}
 }
 
 int32 UMyGameplayAbility_Item::GetSlotIndexFromInputTag() const

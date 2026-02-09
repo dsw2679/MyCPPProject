@@ -213,10 +213,14 @@ void UMyHeroComponent::Input_AbilityInputTagPressed(FGameplayTag InputTag)
 
     UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
     if (!ASC) return;
+    
 
     // ASC에 등록된 스킬들 중, 현재 눌린 키의 Tag를 가진 스킬을 찾습니다.
     for (FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
     {
+        // 스펙에 들어있는 모든 동적 태그들을 문자열로 합칩니다.
+        FString SpecTagsStr = Spec.GetDynamicSpecSourceTags().ToString();
+        
         if (Spec.GetDynamicSpecSourceTags().HasTagExact(InputTag))
         {
             // 1. 입력이 눌렸음을 스킬 내부로 전달 (WaitInputPress 노드 등에서 사용)
@@ -246,6 +250,10 @@ void UMyHeroComponent::Input_AbilityInputTagReleased(FGameplayTag InputTag)
         {
             // 입력이 떨어졌음을 스킬 내부로 전달 (WaitInputRelease 노드 등에서 사용)
             ASC->AbilityLocalInputReleased(Spec.InputID);
+            
+            UE_LOG(LogTemp, Warning, TEXT(">>> MATCH FOUND! <<<"));
+            bool bActivated = ASC->TryActivateAbility(Spec.Handle);
+            UE_LOG(LogTemp, Warning, TEXT("TryActivateAbility Result: %s"), bActivated ? TEXT("SUCCESS") : TEXT("FAIL"));
         }
     }
 }

@@ -17,7 +17,7 @@ Source/MyCPPProject/Public/MyGameplayTags.h ,
 Source/MyCPPProject/Public/UI/MyUserWidget.h , 
 Source/MyCPPProject/Public/UI/MyPlayerHUDWidget.h
 TARGET_PLATFORMS : Win64
-LANGUAGE_SCOPE: 블루프린트 + CPP 혼합
+LANGUAGE_SCOPE: c++ 로 대부분의 기능 구현 후 blueprint로는 함수 연결정도만
 SAFETY_LEVEL: High
 
 [절대 준수 조건]

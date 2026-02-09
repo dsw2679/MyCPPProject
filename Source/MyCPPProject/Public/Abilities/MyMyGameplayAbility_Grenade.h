@@ -15,6 +15,6 @@ class MYCPPPROJECT_API UMyMyGameplayAbility_Grenade : public UMyGameplayAbility_
 	GENERATED_BODY()
 	
 protected:
-	virtual void ActivateItemEffect() override;
+	//virtual void ActivateItemEffect() override;
 	
 };

@@ -34,6 +34,14 @@ public:
 	
 	const TMap<TObjectPtr<const UMyItemDefinition>, int32>& GetOwnedItems() const { return OwnedItems; }
 	
+	// (퀵슬롯)슬롯 A와 슬롯 B의 아이템을 서로 맞바꿉니다.
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SwapQuickSlots(int32 SlotIndexA, int32 SlotIndexB);
+	
+	// 골드 값을 반환
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	int32 GetCurrentGold() const { return Gold; }
+	
 protected:
 	void BroadcastInventoryMessage();
 	

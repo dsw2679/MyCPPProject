@@ -28,19 +28,55 @@ void UMyInventoryComponent::BeginPlay()
 
 bool UMyInventoryComponent::TryBuyItem(const UMyItemDefinition* ItemDef)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[TryBuyItem]  is called"));
-	if (!ItemDef) return false;
-
-	if (Gold < ItemDef->Price)
+	// 유효성 검사
+	if (!ItemDef)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Inventory] Not enough gold!"));
+		UE_LOG(LogTemp, Warning, TEXT("[Inventory] Buy Failed: Item definition is null."));
 		return false;
 	}
-	
-	Gold -= ItemDef->Price;
-	OwnedItems.FindOrAdd(ItemDef)++;
 
+	// 가격 유효성 검사 (0원 이상인지 확인)
+	if (ItemDef->Price < 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Inventory] Buy Failed: Item %s has invalid price (%d)."),
+			*ItemDef->ItemName.ToString(), ItemDef->Price);
+		return false;
+	}
+
+	// 재화 확인
+	if (Gold < ItemDef->Price)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Inventory] Buy Failed: Not enough gold for %s. (Required: %d, Current: %d)"),
+			*ItemDef->ItemName.ToString(), ItemDef->Price, Gold);
+
+		// 여기서 GameplayMessageRouter를 통해 "골드가 부족합니다" 팝업을 띄우는 신호를 보낼 수 있습니다.
+		return false;
+	}
+
+	// 구매 처리 (트랜잭션)
+	Gold -= ItemDef->Price;
+
+	// TMap에 아이템 추가 (이미 있으면 수량 증가, 없으면 1로 초기화)
+	int32& OwnedCount = OwnedItems.FindOrAdd(ItemDef);
+	OwnedCount++;
+
+	UE_LOG(LogTemp, Log, TEXT("[Inventory] Buy Success: %s. Remaining Gold: %d. Total Owned: %d"),
+		*ItemDef->ItemName.ToString(), Gold, OwnedCount);
+
+	// 퀵슬롯 수량 동기화 로직
+	for (int32 i = 0; i < BattleItemSlots.Num(); ++i)
+	{
+		// 현재 장착된 아이템이 방금 구매한 아이템과 같다면
+		if (BattleItemSlots[i].ItemDef == ItemDef)
+		{
+			// 최대 소지 개수 제한 내에서 수량 갱신
+			BattleItemSlots[i].CurrentCount = FMath::Min(OwnedCount, ItemDef->MaxStackCount);
+		}
+	}
+	
+	// 변경 사항 전파 (메시지 브로드캐스트)
 	BroadcastInventoryMessage();
+
 	return true;
 }
 
@@ -48,78 +84,64 @@ void UMyInventoryComponent::EquipItemToSlot(const UMyItemDefinition* ItemDef, in
 {
 	
 	if (!ItemDef || !BattleItemSlots.IsValidIndex(SlotIndex)) return;
-	
+
 	int32 OwnedCount = OwnedItems.FindRef(ItemDef);
 	if (OwnedCount <= 0)
 	{
-		// 골드가 충분하다면 구매 성공
-		if (TryBuyItem(ItemDef))
-		{
-			OwnedCount = OwnedItems.FindRef(ItemDef); // 구매 후 수량(1개) 다시 가져옴
-			UE_LOG(LogTemp, Log, TEXT("[Inventory] Auto-bought item on drop: %s"), *ItemDef->ItemName.ToString());
-		}
-		else
-		{
-			// 골드가 없거나 구매 실패 시 장착 중단
-			UE_LOG(LogTemp, Warning, TEXT("[Inventory] FAILED to auto-buy on drop: %s (Not enough gold?)"), *ItemDef->ItemName.ToString());
-			return;
-		}
+		if (!TryBuyItem(ItemDef)) return;
+		OwnedCount = OwnedItems.FindRef(ItemDef);
 	}
-	
-	// asc를 찾아와서
+
 	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
-	if (!ASC) return;
-	
-	// 해당 슬롯에 이미 능력이 있다면 먼저 제거 
-	if (BattleItemSlots[SlotIndex].AbilityHandle.IsValid())
-	{
-		ASC->ClearAbility(BattleItemSlots[SlotIndex].AbilityHandle);
-		BattleItemSlots[SlotIndex].AbilityHandle = FGameplayAbilitySpecHandle();
-	}
-	
-	// 이미 다른 슬롯에 같은 아이템이 있다면 해제 (중복 방지)
+
+	// 중복 제거 (지금 장착할 슬롯 이외의 칸에 같은 아이템이 있다면 해제)
 	for (int32 i = 0; i < BattleItemSlots.Num(); ++i)
 	{
+		if (i == SlotIndex) continue; 
+
 		if (BattleItemSlots[i].ItemDef == ItemDef)
 		{
-			BattleItemSlots[i].ItemDef = nullptr;
-			BattleItemSlots[i].CurrentCount = 0;
-			BattleItemSlots[i].MaxStackCount = 0;
+			if (ASC && BattleItemSlots[i].AbilityHandle.IsValid()) {
+				ASC->ClearAbility(BattleItemSlots[i].AbilityHandle);
+			}
+			BattleItemSlots[i] = FMyItemSlotInfo(); 
 		}
 	}
-	
-	// 새로운 아이템 데이터 설정
-	BattleItemSlots[SlotIndex].ItemDef = ItemDef;
-	if (ItemDef)
+
+	// 현재 슬롯의 기존 어빌리티 제거
+	if (ASC && BattleItemSlots[SlotIndex].AbilityHandle.IsValid())
 	{
-		BattleItemSlots[SlotIndex].CurrentCount = FMath::Min(OwnedCount, ItemDef->MaxStackCount);
-		BattleItemSlots[SlotIndex].MaxStackCount = ItemDef->MaxStackCount;
-
-		// 5. 아이템에 어빌리티가 있다면 새로 부여
-		if (ItemDef->ItemAbility)
-		{
-			FGameplayAbilitySpec Spec(ItemDef->ItemAbility);
-
-			// 입력 태그(1, 2, 3, 4번 키)를 동적으로 할당
-			FGameplayTag SlotTag = GetInputTagForSlot(SlotIndex);
-			//Spec.DynamicAbilityTags.AddTag(SlotTag);
-			Spec.GetDynamicSpecSourceTags().AddTag(SlotTag);
-
-			// 능력 부여 후 핸들 저장 (나중에 지우기 위함)
-			BattleItemSlots[SlotIndex].AbilityHandle = ASC->GiveAbility(Spec);
-		}
+		ASC->ClearAbility(BattleItemSlots[SlotIndex].AbilityHandle);
 	}
-	
-	// 슬롯에 등록 및 현재 보유 수량(최대치 제한 적용) 할당
-	BattleItemSlots[SlotIndex].ItemDef = ItemDef;
-	BattleItemSlots[SlotIndex].CurrentCount = FMath::Min(OwnedCount, ItemDef->MaxStackCount);
-	BattleItemSlots[SlotIndex].MaxStackCount = ItemDef->MaxStackCount;
+
+	// 데이터 및 어빌리티 할당
+	FMyItemSlotInfo NewSlotInfo;
+	NewSlotInfo.ItemDef = ItemDef;
+	NewSlotInfo.CurrentCount = FMath::Min(OwnedCount, ItemDef->MaxStackCount);
+	NewSlotInfo.MaxStackCount = ItemDef->MaxStackCount;
+
+	if (ASC && ItemDef->ItemAbility)
+	{
+		FGameplayAbilitySpec Spec(ItemDef->ItemAbility);
+		Spec.GetDynamicSpecSourceTags().AddTag(GetInputTagForSlot(SlotIndex));
+		NewSlotInfo.AbilityHandle = ASC->GiveAbility(Spec);
+	}
+
+	// 최종 저장
+	BattleItemSlots[SlotIndex] = NewSlotInfo;
 
 	BroadcastInventoryMessage();
+	UE_LOG(LogTemp, Log, TEXT("[Equip] Successfully equipped %s to slot %d"), *ItemDef->ItemName.ToString(), SlotIndex);
 }
 
 bool UMyInventoryComponent::ConsumeItem(int32 SlotIndex)
 {
+	// 서버 권한 확인 (클라이언트는 실행 금지)
+	if (!GetOwner()->HasAuthority())
+	{
+		return false;
+	}
+	
 	if (!BattleItemSlots.IsValidIndex(SlotIndex)) return false;
 
 	FMyItemSlotInfo& Slot = BattleItemSlots[SlotIndex];
@@ -143,6 +165,48 @@ bool UMyInventoryComponent::ConsumeItem(int32 SlotIndex)
 int32 UMyInventoryComponent::GetTotalItemCount(const UMyItemDefinition* ItemDef) const
 {
 	return OwnedItems.FindRef(ItemDef);
+}
+
+void UMyInventoryComponent::SwapQuickSlots(int32 SlotIndexA, int32 SlotIndexB)
+{
+	// [1] 데이터 백업 (구조체 복사)
+	FMyItemSlotInfo SlotA = BattleItemSlots[SlotIndexA];
+	FMyItemSlotInfo SlotB = BattleItemSlots[SlotIndexB];
+
+	// [2] 실제 배열 데이터 교체
+	BattleItemSlots[SlotIndexA] = SlotB;
+	BattleItemSlots[SlotIndexB] = SlotA;
+
+	// [3] GAS 어빌리티 태그 업데이트 (입력 키 번호를 슬롯 인덱스에 맞게 동기화)
+	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
+	if (ASC)
+	{
+		auto UpdateTag = [&](int32 Index) {
+			FMyItemSlotInfo& Slot = BattleItemSlots[Index];
+			if (Slot.AbilityHandle.IsValid())
+			{
+				if (FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromHandle(Slot.AbilityHandle))
+				{
+					// 기존 아이템 태그(1~4번) 모두 제거
+					Spec->GetDynamicSpecSourceTags().RemoveTag(MyGameplayTags::InputTag_Item_1);
+					Spec->GetDynamicSpecSourceTags().RemoveTag(MyGameplayTags::InputTag_Item_2);
+					Spec->GetDynamicSpecSourceTags().RemoveTag(MyGameplayTags::InputTag_Item_3);
+					Spec->GetDynamicSpecSourceTags().RemoveTag(MyGameplayTags::InputTag_Item_4);
+
+					// 새 슬롯 번호에 맞는 태그 부여
+					Spec->GetDynamicSpecSourceTags().AddTag(GetInputTagForSlot(Index));
+					ASC->MarkAbilitySpecDirty(*Spec);
+				}
+			}
+		};
+
+		UpdateTag(SlotIndexA);
+		UpdateTag(SlotIndexB);
+	}
+
+	// [4] 결과 보고 및 UI 갱신
+	BroadcastInventoryMessage();
+	UE_LOG(LogTemp, Log, TEXT("[Inventory] Swap Fixed: Slot %d <-> %d"), SlotIndexA, SlotIndexB);
 }
 
 void UMyInventoryComponent::BroadcastInventoryMessage()

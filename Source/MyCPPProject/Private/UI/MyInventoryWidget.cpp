@@ -4,13 +4,17 @@
 #include "UI/MyInventoryWidget.h"
 
 #include "MyGameplayTags.h"
+#include "Advanced/DragDrop/MyDragDropOperation.h"
 #include "UI/MyItemWidgetInterface.h"
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
 #include "Blueprint/UserWidget.h"
 #include "Component/MyInventoryComponent.h"
+#include "Components/TextBlock.h"
 #include "Experience/MyItemDefinition.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
+#include "GameFramework/PlayerState.h"
+
 
 void UMyInventoryWidget::RefreshInventory(const FMyInventoryMessage& Message)
 {
@@ -19,6 +23,14 @@ void UMyInventoryWidget::RefreshInventory(const FMyInventoryMessage& Message)
 	// 기존 슬롯 싹 비우기
 	InventoryGrid->ClearChildren();
 
+	// 골드 갱신
+	if (TXT_CurrentGold)
+	{
+		// 숫자를 텍스트로 변환하여 세팅
+		FText GoldText = FText::AsNumber(Message.CurrentGold);
+		TXT_CurrentGold->SetText(GoldText);
+	}
+	
 	// 인벤토리 주인으로부터 인벤토리 컴포넌트 가져오기
 	AActor* Owner = Message.OwnerActor ? Message.OwnerActor : GetOwningPlayerPawn();
 	if (!Owner) return;
@@ -81,4 +93,44 @@ void UMyInventoryWidget::NativeConstruct()
 		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(World);
 		MessageSubsystem.RegisterListener(MyGameplayTags::Message_Inventory_Updated, this, &UMyInventoryWidget::OnInventoryUpdated);
 	}
+	
+	// 초기 데이터 강제 갱신
+	if (APlayerState* PS = GetOwningPlayerState())
+	{
+		if (UMyInventoryComponent* InvComp = PS->FindComponentByClass<UMyInventoryComponent>())
+		{
+			if (TXT_CurrentGold)
+			{
+				int32 StartGold = InvComp->GetCurrentGold();
+				TXT_CurrentGold->SetText(FText::AsNumber(StartGold));
+
+				UE_LOG(LogTemp, Log, TEXT("[UI] Inventory Initialized with Gold: %d"), StartGold);
+			}
+		}
+	}
 }
+
+bool UMyInventoryWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+{
+	if (UMyDragDropOperation* ItemOp = Cast<UMyDragDropOperation>(InOperation))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Drop] SourceType: %d, Item: %s"),
+	(int)ItemOp->SourceType, ItemOp->PayloadItem ? *ItemOp->PayloadItem->ItemName.ToString() : TEXT("NULL"));
+		
+		// 상점에서 온 아이템이면 구매 시도
+		if (ItemOp->SourceType == EMyDragSource::Shop && ItemOp->PayloadItem)
+		{
+			if (APlayerState* PS = GetOwningPlayerState())
+			{
+				if (UMyInventoryComponent* InvComp = PS->FindComponentByClass<UMyInventoryComponent>())
+				{
+					// 구매 함수 호출
+					InvComp->TryBuyItem(ItemOp->PayloadItem);
+					return true;
+				}
+			}
+		}
+	}
+	return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+}
+

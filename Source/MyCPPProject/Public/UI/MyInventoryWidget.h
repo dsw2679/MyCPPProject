@@ -26,7 +26,9 @@ public:
 	void OnInventoryUpdated(FGameplayTag Channel, const FMyInventoryMessage& Message);
 	
 	void NativeConstruct() override;
-	
+	bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
+	                  UDragDropOperation* InOperation);
+
 protected:
 	
 	// 인벤토리 슬롯들이 들어갈 그리드 패널
@@ -40,4 +42,8 @@ protected:
 	// 한줄에 표시할 슬롯 개수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory UI")
 	int32 ColumnCount = 5;
+	
+	// 골드 표시용 텍스트
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<class UTextBlock> TXT_CurrentGold;
 };

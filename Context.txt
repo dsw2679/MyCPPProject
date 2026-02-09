@@ -219,176 +219,43 @@ GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평�
    * 전조 효과 (Telegraph): 공격 범위를 미리 알리는 데칼(Decal)과 타임라인 연출을 적용했습니다.
    * 패턴별 VFX: 당기기 시 플레이어를 붙잡는 유령 손(Cascade) 이펙트 등 주요 패턴에 시각적 피드백을 추가했습니다.
 
-[3주차 마지막일]
-
-1. 무력화 시스템 (Stagger System) 구축
- * Core (C++): MyAttributeSet에 IncomingStagger 메타 속성 로직 추가. 데미지와 분리하여 처리하며, State.Boss.Immune.Stagger 태그 보유 시 무력화 면역 기능 구현.
- * Ability (Boss): GA_Boss_Stagger 구현. 무력화 발생(Event.Boss.Staggered) 시 발동하여 State.Boss.Staggered 태그를 부여하고, 종료 시 GE_Boss_RecoverStagger로 게이지를 회복시킴.
- * Ability (Player): AnimNotifyState_AttackHitCheck (C++)를 수정하여 SetByCaller.Stagger 태그로 무력화 수치(StaggerMultiplier)를 전달하도록 기능 확장.
- * AI (Behavior Tree): 무력화 시 보스가 행동을 멈추도록 Blackboard Decorator (IsStaggered 키) 및 AbilityTask를 활용한 중단 로직 완성. 커스텀 데코레이터 MyBTDecorator_CheckTag도 예비용으로 제작.
-
-2. 보스 10% 패턴: Ultimate Swing (최후의 발악)
- * 로직: 8초 타임어택형 전멸기 패턴 GA_Boss_UltimateSwing 구현.
- * 작동 방식: 패턴 시작 시 무력화 게이지 리셋 -> 기 모으기(Charge) 모션 재생 -> 시간 내 무력화 실패 시 전멸기(GE_Wipe_Damage) 발동. 무력화 성공 시(GA_Boss_Stagger 발동) 패턴 자동 취소.
-
-3. Pull 패턴 (강제 끌어오기)
- * 로직: 플레이어가 멀어지면 GA_Boss_Pull 발동.
- * 이동 구현: AbilityTask_InterpMoveTo (C++)를 신규 제작하여 2단계(중간->코앞)로 부드럽게 당겨오는 연출 구현.
- * CC기 (Stun): GE_Stun을 통해 State.Debuff.Stun 태그 부여. SetIgnoreMoveInput 및 IA_Move에서의 태그 검사를 통해 플레이어의 이동 및 입력을 완벽하게 차단.
- * VFX: GC_Boss_Pull_Hand (Cascade Looping) 제작. 스턴 상태 동안 플레이어 가슴에 유령 손이 붙잡는 이펙트 연출.
-
-[02.02 한 일]
-
-  1. 보스 패턴: Speedburst (돌진)
-   * 이슈: Telegraph(전조) 데칼이 처음에만 보이고 이후 스킵되는 현상 해결.
-       * 원인 1: 타임라인 키값이 비어있어 Finished 이벤트가 불안정하게 호출됨 -> DestroyActor 누락.
-       * 원인 2: 전조 액터(GC_Pointing_Decal) 파괴 후에도 장판 액터(GC_Pointing_Zone)에 똑같은 데칼이 남아있어 안 지워진 것처럼 보임.
-   * 해결:
-       * GC_Boss_Telegraph_Speedburst의 타임라인 키값 추가.
-       * GC_Pointing_Zone에서 불필요한 데칼 컴포넌트 삭제 및 VFX(파티클)로 대체.
-       * GA에서 전조 크기(Extent) 조정 및 Allow Multiple Instances 활성화.
-
-  2. 보스 패턴: Meteor (Cast 응용)
-   * 구현: GA_Boss_Basic_Cast 로직 확장.
-       * Telegraph: 기존 ShowTelegraphCircle 함수 재사용.
-       * Meteor: GC_Boss_Meteor_Fall 제작 (GameplayCueNotify_Actor).
-           * OnActive: 하늘(Location + Z)에서 생성 후 타임라인으로 낙하.
-           * Finished: 바닥 도달 시 폭발(ExplosionFX) 및 데미지 판정(ApplyDamageToArea).
-       * Color: 파티클 에셋의 Color Over Life를 수정하여 Sevarog 테마(녹색/청록색)로 변경.
-
-  3. 보스 패턴: Ultimate Swing (10% 전멸기)
-   * 진행 상황: 기능 구현 완료, 이펙트 연출 작업 중.
-   * 구현된 연출:
-       * Charge (기 모으기): GC_Boss_Ultimate_Charge (Looping) -> 보스 몸에 부착.
-       * Explosion (전멸 폭발): GC_Boss_Ultimate_Explosion (Static) -> 화면 전체 타격감 연출 기획 (카메라 앞 이펙트, PostProcess 등).
-   * 최적화: GameplayCueNotify_Actor에서 매번 Cast하는 비용을 줄이고 편의성을 높이기 위해 C++ 베이스 클래스(AMyGameplayCueActor_Looping) 제작 제안됨.
-
-  4. 시스템 수정 (C++)
-   * MyPawnData: PreloadVFX 외에 PreloadParticles(Cascade) 지원 추가.
-   * MyBossCharacter: PreloadParticles 로드 로직 추가 및 GameplayAbility_Boss 함수들 점검.
-   * GameplayTags: Ability.ActivateFail.Cost 태그 누락으로 인한 Ensure 오류 해결 가이드 (Project Settings에 추가 필요).
-
-  📅 [02.03의 개발 요약: GAS 기반 UI 프레임워크 구축]
-
-  1. 핵심 성과
-   * GAS + UI 완전 연동: AttributeSet(HP, MP)과 GameplayTag(쿨타임)가 UI에 실시간으로 반영되는 시스템을 완성했습니다.
-   * Lyra 스타일 레이어 시스템 적용: CommonUI의 PrimaryGameLayout을 통해 Stack_Game 레이어에 HUD를 자동으로 Push하는 구조를 정착시켰습니다.
-   * 쿨타임 시스템 최적화: C++은 상태 변경(OnCooldownTagChanged)만 알리고, 시각적 갱신(타이머, 숫자, 스와이프)은 블루프린트 위젯(WBP_SkillSlot)이 독자적으로 수행하는 고효율 구조를 구현했습니다.
-
-  2. 작업한 파일 및 클래스
-
-   * C++ Classes (`Source/MyCPPProject/...`)
-       * UMyUserWidget: GAS 속성 바인딩용 기본 UI 클래스. SetAbilitySystemComponent 자동화 로직 포함.
-       * UMyPlayerHUDWidget: 플레이어 전용 HUD. 스킬 쿨타임 태그 이벤트를 수신하여 SkillSlotMap에 등록된 슬롯 위젯에 전달.
-       * UMySkillSlotWidget: 개별 스킬 슬롯. 남은 시간(RemainingTime)과 전체 시간(TotalDuration)을 관리.
-       * UMyGaugeWidget: HP/MP 구슬 및 막대바 공용 클래스. 메테리얼(Percent) 제어.
-       * UMyBossHealthWidget: GameplayMessageSubsystem을 통해 보스 체력을 수신하는 느슨한 결합(Decoupling) 위젯.
-       * AMyCPPProjectPlayerController: BeginPlay에서 PrimaryLayout 생성 및 HUD Push, OnPossess에서 UI와 ASC 연결 담당.
-       * MyPrimaryGameLayout: Stack_Game 등의 레이어 위젯을 태그(UI.Layer.*)와 연결.
-       * MyGameplayTags: 쿨타임(Cooldown.Skill.*) 및 UI 레이어 태그 등록.
-
-   * Blueprints (UMG)
-       * WBP_MyPrimaryLayout: 화면 전체를 덮는 최상위 레이아웃. (Stack_Game, Stack_Menu, Stack_Modal 포함).
-       * WBP_MyHUDLayout: 게임 중 표시될 HUD 컨테이너. (WBP_PlayerHUD 포함).
-       * WBP_PlayerHUD: HP/MP 구슬(WBP_HealthOrb)과 스킬 슬롯(WBP_SkillSlot) 배치 및 연결.
-       * WBP_SkillSlot: 쿨타임 숫자 카운트다운(Timer) 및 스와이프 애니메이션(Material) 구현.
-
-   * Materials
-       * M_UI_Gauge: HP/MP 구슬용 프로그레스 메테리얼.
-       * M_UI_CooldownSwipe: VectorToRadialValue를 이용한 시계 방향 쿨타임 스윕 메테리얼.
-
-  3. 해결된 주요 이슈 (Troubleshooting)
-   * HP/MP 부동 현상: OnPossess 이벤트에서 TargetHUD->SetAbilitySystemComponent(ASC)를 호출하여 초기화 타이밍 문제 해결.
-   * 쿨타임 숫자 멈춤: 블루프린트 타이머 중복 실행 방지(Branch) 및 CurrentCooldownEndTime 계산 로직 수정.
-   * 쿨타임 스와이프 미작동: 비율 계산식 (EndTime - CurrentTime) / TotalTime 적용 및 메테리얼 파라미터명(Percent) 일치 확인.
-   * 태그 불일치: GA의 SetByCaller.Cooldown 태그를 Cooldown.Skill.*로 통일하여 C++ 감지 로직 정상화.
-
-    메모:
-   * MySkillSlotWidget은 C++에서 UpdateCooldown을 직접 호출하므로 WBP_PlayerHUD 그래프에서 별도 연결이 필요 없습니다.
-   * WBP_SkillSlot의 로직은 GetTimeSeconds를 기준으로 정확한 남은 시간을 계산하도록 설계되었습니다.
-
-  🚀 [02.04 한 일 ]
-
-오늘은 보스 레이드의 시각적 핵심인 UI 시스템과 데미지 피드백을 완성했습니다. 특히 모듈화된 위젯 구조와 C++ 기반 최적화를 통해 성능과 유지보수성을 모두 확보했습니다.
-
----
-
-1. 보스 UI 시스템 완성 (`MyBossHealthWidget`)
- * 구조: 사장님(BossInfo)이 메시지를 받고 직원(BossHealth, BossStagger)에게 명령을 내리는 포함(Composition) 구조로 설계했습니다.
- * 기능:
-     * 체력바(HP): 보스의 체력이 실시간으로 빨간색 게이지에 반영됩니다.
-     * 무력화 게이지(Stagger): 노란색 게이지가 구현되었으며, IncomingStagger(데미지)가 아닌 실제 Stagger 값을 감지하도록 수정하여 깜빡임 문제를 해결했습니다.
-     * 정보 표시: 보스 이름과 광폭화 제한 시간을 MyPawnData에서 읽어와 초기화 시 표시합니다.
- * 통신: GameplayMessageSubsystem을 활용하여 보스(Actor)와 UI(Widget) 간의 느슨한 결합(Decoupling)을 유지했습니다.
-
-2. 데미지 폰트 시스템 구현 (`DamageText`)
- * 구조: PlayerController에 부착된 MyDamageTextManagerComponent가 모든 데미지 이벤트를 수신하고 위젯을 관리합니다.
- * 방식: Screen Space 방식을 채택하여 3D 월드 좌표(보스 머리 위)를 2D 화면 좌표로 변환, UI에 텍스트를 띄웁니다.
- * 데이터 분리: Data.Boss 태그를 도입하여 플레이어의 피격 정보가 보스 UI에 잘못 표시되는 버그를 원천 차단했습니다.
- * 초기화 수정: GE_Boss_Init을 Infinite(태그용)와 Instant(스탯용)로 분리하여 태그 부여와 초기화가 동시에 완벽하게 작동하도록 조치했습니다.
-
-3. 스킬 쿨타임 최적화 (`MySkillSlotWidget`)
- * 성능 개선: 기존 블루프린트 타이머 방식을 버리고, C++ NativeTick으로 전환했습니다.
- * 로직: 쿨타임이 돌 때만 Tick을 켜고(bIsRunning), 끝나면 즉시 끄는 로직을 적용하여 CPU 부하를 제로(Zero)에 가깝게 최적화했습니다.
-
----
-
-[해결된 주요 이슈]
- * UI 혼선: 플레이어가 맞았는데 보스 체력바가 줄어드는 문제 -> Data.Boss 태그 검사 로직 추가로 해결.
+  📅 주간 개발 요약 보고서 (4주차 vfx, ui, 인벤토리 작업)
 
 
-[배틀 아이템 시스템 기획 요약]
-
-  
-핵심 데이터 (Data Asset)
-UMyItemDefinition: 모든 아이템의 원본 데이터.
-정보: 이름, 아이콘, 가격, 설명.
-제한: 전투 시 최대 소지 개수 (물약 7, 수류탄 3, 시정 1 등).
-실행: 사용 시 발동할 Gameplay Ability(GA) 클래스.
-
-  
-인벤토리 관리 (Inventory Component)
-위치: AMyCPPProjectPlayerState에 부착 (서버/클라이언트 동기화 및 지속성 보장).
-보유 자산: 초기 골드(1,000g), 구매한 아이템 목록 및 수량.
-배틀 슬롯: 5종의 아이템 중 선택된 4개를 저장하는 슬롯(1~4번).
-
-  
-상점 및 장착 로직 (Shop & Setup)
-상점: 골드를 소모하여 아이템 수량을 확보하는 단계.
-장착: 전체 인벤토리에서 오늘 싸울 아이템 4종을 단축키에 배정하는 단계.
-
-  
-전투 중 사용 (GAS Integration)
-입력: 숫자 키 1, 2, 3, 4 입력 시 각 슬롯에 할당된 GA 실행.
-소모: 어빌리티 실행 시 인벤토리 컴포넌트의 수량을 1 감소 (Cost 처리).
-특수 로직 (시간 정지): 플레이어에게 Effect.Immune 및 Effect.Stun 태그를 동시 부여하여 3초간 무적 및 행동 불능 상태 구현.
+  1. 코어 시스템 및 아키텍처 (Lyra 스타일)
+   * 모듈화 및 느슨한 결합: GameplayMessageRouter를 도입하여 보스(Actor)와 UI(Widget) 간의 직접 참조를 제거하고 메시지 기반으로 데이터를 교환하는 구조를 구축했습니다.
+   * 데이터 주도 설계: MyPawnData, MyItemDefinition 등 Data Asset을 통해 캐릭터의 스탯, 스킬, 인벤토리 데이터를 코드 수정 없이 관리할 수 있도록 설계했습니다.
+   * 네이티브 태그 전환: 성능 최적화와 안정성을 위해 모든 게임플레이 태그를 C++ UE_DEFINE_GAMEPLAY_TAG 기반의 Native Tags로 전면 교체했습니다.
 
 
-[구현 단계]
+  2. 전투 및 GAS (Gameplay Ability System)
+   * 플레이어 스킬 시스템: LostArk의 조작감을 위해 다양한 스킬 타입(콤보, 차지, 홀딩, 지점 설치)을 C++ 기반 GAS로 구현했습니다.
+   * 배틀 아이템 시스템:
+       * InventoryComponent를 PlayerState에 부착하여 데이터 영속성을 확보했습니다.
+       * 아이템 장착 시 해당 아이템의 GAS 어빌리티를 동적으로 부여(GiveAbility)하고 해제하는 로직을 완성했습니다.
+       * 슬롯 인덱스를 입력 태그(InputTag.Item.1~4)를 통해 런타임에 계산하는 스마트한 아이템 사용 로직을 구축했습니다.
+   * 무력화(Stagger) 시스템: 보스의 무력화 게이지를 별도로 구축하고, 플레이어의 스킬별로 무력화 배율을 적용하여 전략적 전투가 가능하게 했습니다.
 
-   
-C++ 클래스 생성:
-UMyItemDefinition (Data Asset)
-UMyInventoryComponent (Actor Component)
-FMyItemSlot (슬롯 정보 구조체)
 
-   
-인벤토리 기능 구현:
-TryBuyItem(): 골드 체크 및 아이템 추가.
-EquipItemToSlot(): 4칸 제한 장착 로직.
-ConsumeItem(): 전투 중 개수 차감 및 0개 시 사용 불가 처리.
+  3. 보스 AI 및 패턴 (Sevarog)
+   * 일반 패턴: 돌진(Speedburst), 장판(Cast), 3연타(SwingCombo) 등 5종 패턴 완성 및 전조(Telegraph) 데칼 이슈 해결.
+   * 특수/전멸기 패턴:
+       * 체력 70%: 무작위 광역 장판 패턴.
+       * 체력 10%: 타임어택형 무력화 전멸기(Ultimate Swing) 및 VFX 연출.
+       * 강제 기믹: 플레이어와 거리가 멀어질 시 강제로 당겨오는 Pull 패턴 및 AbilityTask 기반 이동 구현.
 
-   
-GAS 어빌리티 제작:
-GA_Item_Recovery: 체력 회복.
-GA_Item_Adrophine: 공격력 버프.
-GA_Item_Grenade: 데미지 및 무력화(Stagger) 부여.
-GA_Item_TimeStop: 무적 및 캐릭터 정지 상태 구현.
 
-   
-UI 연동:
-WBP_Shop: 아이템 구매 UI.
-WBP_ItemSlot: HUD에 표시될 아이콘, 개수, 쿨타임 표시.
+  4. UI 및 CommonUI 프레임워크
+   * 레이어 기반 UI 관리: PrimaryGameLayout을 통해 HUD(Game), 인벤토리(Menu), 팝업(Modal) 레이어를 관리하는 Lyra 스타일 UI 스택을 정착시켰습니다.
+   * 실시간 스탯 연동: AttributeSet(HP, MP) 변화를 UI에 실시간 반영하고, C++ Native Tick을 활용한 초고효율 스킬 쿨타임 시각화(스와이프, 타이머)를 구현했습니다.
+   * 인벤토리/상점 UI: 드래그 앤 드롭을 통한 아이템 구매 및 장착 로직을 인터페이스(IMyItemWidgetInterface) 기반으로 표준화했습니다.
+
+
+  5. 현재 직면한 과제 및 진행 상황
+   * 이슈: 인벤토리 창을 닫은 후 마우스 커서가 사라지거나 입력이 간헐적으로 끊기는(포커스 실종) 현상이 발생 중입니다.
+   * 원인: CommonUI의 ActionRouter가 메뉴 종료 시 뷰포트 포커스를 엔진 기본값(CapturePermanently)으로 초기화하는 과정에서 발생하는 Slate 레벨의 레이스 컨디션으로 파악되었습니다.
+   * 진행 상태: SetInputMode, GetDesiredInputConfig, NativeOnActivated 등 다양한 방어 코드를 HUD(MyHUDLayout)에 적용하여 해결 중이며, 현재 마우스 커서는 유지되나 입력 반응성을 완벽하게 복구하는 단계에 있습니다.
+
 
 ---
 
@@ -421,11 +288,46 @@ WBP_ItemSlot: HUD에 표시될 아이콘, 개수, 쿨타임 표시.
 
   ---
 
+[어제 한 일]
+  1. 프로젝트 현재 상황
+   * 엔진 버전: UE 5.7.1 (Lyra 프레임워크 기반)
+   * 핵심 목표: LostArk 스타일의 쿼터뷰 보스 레이드 구현 및 배틀 아이템 시스템 완성
+   * 사용 기술: GAS (Gameplay Ability System), CommonUI, Gameplay Message Router
 
- [오늘 할 일]
-   0. input i -> create widget -> add to viewport로 이어지던 임시 디버그용으로 ui창을 띄우던 방식에서 WBP_MyPrimaryLayout의 Stack_Menu에 push하는 방식으로 변경 (CommonUI 기능 활용해 ESC로 Stack_Game으로 돌아가는것 까지)
-   1. 배틀 아이템 어빌리티(GA) 구현: GA_MyItemBase를 상속받아 포션(HP 회복), 수류탄(투척 및 무력화), 시정(무적) 등의 실제 효과 제작.
-   2. 아이템 소모 로직: 어빌리티 실행 시 InventoryComponent->ConsumeItem(SlotIndex)를 호출하여 수량 차감 및 0개 시 사용 불가 처리.
-   3. 상점 확장: 아이템 구매 시 골드 부족 예외 처리 UI 알림 및 구매 애니메이션 추가.
+
+  2. 오늘 완료한 작업 (Completed)
+   * UI 시스템 전환: 인벤토리(상점 관리) 창을 AddToViewport 방식에서 PrimaryGameLayout의 Stack_Menu에 Push하는 Lyra 방식으로 전환 완료.
+   * 배틀 아이템 C++ 코어:
+       * UMyGameplayAbility_Item: 입력 태그(InputTag.Item.1~4)를 통해 슬롯 인덱스를 동적으로 계산하고 아이템을 소모하는 기반 클래스 구현.
+       * UMyInventoryComponent::EquipItemToSlot: 아이템 장착 시 자동으로 구매(TryBuyItem)를 시도하고, 해당 아이템의 GAS 어빌리티를 동적으로 부여(GiveAbility) 및 해제(ClearAbility)하는 로직 완성.
+   * 태그 시스템 확장: 입력 및 메시지 통신을 위한 네이티브 게임플레이 태그 정의 완료.
+
+
+  3. 현재 직면한 문제 (Ongoing Issue)
+  "인벤토리 창을 닫은 후, 마우스 입력이 간헐적으로 씹히는(먹통이 되는) 현상"
+
+
+   * 상세 증상:
+       * 마우스 커서는 보이지만, 땅을 클릭해도 캐릭터가 이동하지 않거나 스킬이 나가지 않음.
+       * "Selected Viewport"에서는 처음엔 정상이나 UI를 껐다 켜면 발생.
+       * "Standalone" 모드에서는 시작부터 발생하며, UI를 한 번 껐다 켜야 복구됨.
+   * 원인 분석: CommonUI의 ActionRouter가 메뉴 전환 시 포커스를 뷰포트로 완벽하게 돌려주지 못하거나, 입력 캡처 모드가 엔진 기본값으로 초기화되면서 발생하는 Slate 포커스 레이스 컨디션.
+
+
+  4. 시도했던 해결 방법 (Attempted)
+   1. 설정 변경: DefaultInput.ini를 NoCapture, DoNotLock으로 수정.
+   2. HUD 클래스(`MyHUDLayout`) 강화:
+       * GetDesiredInputConfig 오버라이드: All 모드 및 NoCapture 반환.
+       * NativeConstruct: bSupportsActivationFocus = true, SetConsumePointerInput(false) 설정.
+       * NativeGetDesiredFocusTarget: nullptr 반환하여 뷰포트로 포커스 유도.
+   3. 포커스 강제 로직: NativeOnActivated에서 FSlateApplication::Get().SetAllUserFocus() 및 ReleaseAllPointerCapture()를 사용하여 Slate 레벨에서 뷰포트 포커스를 쟁취하려 시도함.
+   4. 잔재 코드 정리: 상점 위젯의 NativeOnDeactivated에서 커서를 강제로 끄던 코드 제거.
+
+
+  5. 다음 단계 제안 (Next Steps)
+   * Input Data 에셋 정밀 점검: CommonUI의 CommonInputBaseControllerData 에셋 내에서 Windows 플랫폼의 하드웨어 커서 설정 및 Default Click Action의 캡처 모드 확인 필요.
+   * Action Domain 재검토: CommonInputActionDomain 에셋이 현재 입력 라우팅을 방해하고 있는지, 혹은 특정 레이어에서 입력을 '소비(Consume)'하고 있는지 전수 조사.
+   * 전환 시간 조정: WBP_ShopManagementUI의 Deactivation Transition Duration을 0으로 설정하여 애니메이션 중 입력 차단 여부 확인.
+
 
 

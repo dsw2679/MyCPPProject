@@ -3,16 +3,20 @@
 
 #include "UI/MyItemSlotWidget.h"
 
+#include "MyGameplayTags.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Experience/MyItemDefinition.h"
 #include "Advanced/DragDrop/MyDragDropOperation.h"
 #include "Component/MyInventoryComponent.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
+#include "GameFramework/PlayerState.h"
 
 void UMyItemSlotWidget::UpdateItemData(const FMyItemSlotInfo& SlotInfo)
 {
 	const UMyItemDefinition* ItemDef = SlotInfo.ItemDef;
-
+	CurrentItemDef = ItemDef;
+	
 	if (ItemDef)
 	{
 		// 아이콘 설정 (Soft Object Pointer 로드)
@@ -45,19 +49,88 @@ bool UMyItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
 	// C++ 클래스로 캐스팅
 	if (UMyDragDropOperation* ItemOperation = Cast<UMyDragDropOperation>(InOperation))
 	{
-		if (ItemOperation->PayloadItem)
+		UE_LOG(LogTemp, Warning, TEXT("[Drop] SourceType: %d, Item: %s"),
+	(int)ItemOperation->SourceType, ItemOperation->PayloadItem ? *ItemOperation->PayloadItem->ItemName.ToString() : TEXT("NULL"));
+		
+		// OwningPlayerState에서 컴포넌트를 찾습니다.
+		if (APlayerState* PS = GetOwningPlayerState())
 		{
-			// 인벤토리 컴포넌트 찾아서 장착 호출
-			if (APawn* OwningPawn = GetOwningPlayerPawn())
+			
+			if (UMyInventoryComponent* InvComp = PS->FindComponentByClass<UMyInventoryComponent>())
 			{
-				if (UMyInventoryComponent* InvComp = OwningPawn->FindComponentByClass<UMyInventoryComponent>())
+				
+				switch (ItemOperation->SourceType)
 				{
-					// MySlotIndex는 이 클래스에 정의된 정수 변수
-					InvComp->EquipItemToSlot(ItemOperation->PayloadItem, MySlotIndex);
-					return true;
+				case EMyDragSource::Inventory:
+					if (ItemOperation->PayloadItem)
+					{
+						InvComp->EquipItemToSlot(ItemOperation->PayloadItem, MySlotIndex);
+						return true;
+					}
+					break;
+
+				case EMyDragSource::QuickSlot:
+					// [디버깅 로그 추가]
+					UE_LOG(LogTemp, Warning, TEXT("[Swap] Attempting swap. Source: %d, Destination: %d"),
+						ItemOperation->SourceIndex, MySlotIndex);
+
+					// 자기 자신에게 드롭한 게 아닐 때만 스왑
+					if (ItemOperation->SourceIndex != MySlotIndex && ItemOperation->SourceIndex != -1)
+					{
+						InvComp->SwapQuickSlots(ItemOperation->SourceIndex, MySlotIndex);
+						return true;
+					}
+					else
+					{
+						UE_LOG(LogTemp, Error, TEXT("[Swap] Swap condition failed!"));
+					}
+					break;
+				case EMyDragSource::Shop:
+					// 상점 -> 퀵슬롯: 구매 후 성공하면 즉시 장착
+					if (ItemOperation->PayloadItem)
+					{
+						// 먼저 구매 시도
+						if (InvComp->TryBuyItem(ItemOperation->PayloadItem))
+						{
+							// 구매 성공 시 해당 슬롯에 장착
+							InvComp->EquipItemToSlot(ItemOperation->PayloadItem, MySlotIndex);
+							return true;
+						}
+					}
+					break;
 				}
 			}
 		}
 	}
 	return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+}
+
+void UMyItemSlotWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	
+	if (!bIsDragVisual)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(World);
+			MessageSubsystem.RegisterListener(MyGameplayTags::Message_Inventory_Updated, this, &UMyItemSlotWidget::OnInventoryUpdated);
+
+			UE_LOG(LogTemp, Warning, TEXT("[UI] Slot %d Registered as Listener"), MySlotIndex);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UI] Drag Visual Created - Skipping Listener Registration"));
+	}
+}
+
+void UMyItemSlotWidget::OnInventoryUpdated(FGameplayTag Channel, const FMyInventoryMessage& Message)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[UI] Slot %d Received Update Message"), MySlotIndex);
+	// 메시지에 담긴 BattleItemSlots 배열에서 내 인덱스(MySlotIndex) 정보를 찾아 갱신
+	if (Message.BattleItemSlots.IsValidIndex(MySlotIndex))
+	{
+		UpdateItemData(Message.BattleItemSlots[MySlotIndex]);
+	}
 }
