@@ -13,9 +13,12 @@ UCLASS()
 class MYCPPPROJECT_API UMyGameplayAbility_TimeStop : public UMyGameplayAbility_Item
 {
 	GENERATED_BODY()
+	
+public:
+	UFUNCTION(BlueprintCallable, Category = "Item")
+	void ApplyTimeStop();
 
 protected:
-	//virtual void ActivateItemEffect() override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Item")
 	TSubclassOf<UGameplayEffect> TimeStopEffectClass;

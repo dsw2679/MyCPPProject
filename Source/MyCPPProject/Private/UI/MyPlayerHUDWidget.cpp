@@ -132,6 +132,9 @@ void UMyPlayerHUDWidget::OnAttributeChanged(const FGameplayAttribute& Attribute,
 
 void UMyPlayerHUDWidget::OnCooldownTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
+	// [추가] 이 로그가 뜨는데 UI가 반응 없으면 -> SkillSlotMap.Find 실패
+	UE_LOG(LogTemp, Warning, TEXT("[UI DEBUG] Cooldown Tag Changed! Tag: %s, Count: %d"), *Tag.ToString(), NewCount);
+	
 	// 해당 태그를 담당하는 슬롯이 있는지 찾음
 	if (TObjectPtr<UMySkillSlotWidget>* FoundSlot = SkillSlotMap.Find(Tag))
 	{

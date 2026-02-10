@@ -32,6 +32,7 @@ void UMyAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, DamageScale, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UMyAttributeSet, DamageReceiverMultiplier, COND_None, REPNOTIFY_Always);
 }
 
 void UMyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -343,4 +344,9 @@ void UMyAttributeSet::OnRep_DamageScale(const FGameplayAttributeData& OldDamageS
 void UMyAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, AttackPower, OldAttackPower);
+}
+
+void UMyAttributeSet::OnRep_DamageReceiverMultiplier(const FGameplayAttributeData& OldDamageReceiverMultiplier)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UMyAttributeSet, DamageReceiverMultiplier, OldDamageReceiverMultiplier);
 }

@@ -72,4 +72,7 @@ namespace MyGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(InputTag_Item_2, "InputTag.Item.2");
 	UE_DEFINE_GAMEPLAY_TAG(InputTag_Item_3, "InputTag.Item.3");
 	UE_DEFINE_GAMEPLAY_TAG(InputTag_Item_4, "InputTag.Item.4");
+	
+	// 게임 플레이 큐
+	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Grenade_Explosion, "GameplayCue.Grenade.Explosion");
 }

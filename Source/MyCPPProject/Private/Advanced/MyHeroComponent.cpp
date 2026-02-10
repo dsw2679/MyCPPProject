@@ -230,6 +230,13 @@ void UMyHeroComponent::Input_AbilityInputTagPressed(FGameplayTag InputTag)
             if (!Spec.IsActive())
             {
                 ASC->TryActivateAbility(Spec.Handle);
+                // [수정] 실행 결과를 변수에 담고 로그를 출력합니다.
+                bool bActivated = ASC->TryActivateAbility(Spec.Handle);
+                UE_LOG(LogTemp, Log, TEXT("[Pressed] Ability Activation: %s"), bActivated ? TEXT("SUCCESS") : TEXT("FAIL"));
+            }
+            else
+            {
+                UE_LOG(LogTemp, Log, TEXT("[Pressed] Ability is already Active."));
             }
         }
     }
@@ -246,14 +253,17 @@ void UMyHeroComponent::Input_AbilityInputTagReleased(FGameplayTag InputTag)
 
     for (FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
     {
+        FString SpecTagsStr = Spec.GetDynamicSpecSourceTags().ToString();
+        UE_LOG(LogTemp, Warning, TEXT("[Input Check] Ability: %s, Tags: %s, Match: %s"),
+            *Spec.Ability->GetName(), *SpecTagsStr,
+            Spec.GetDynamicSpecSourceTags().HasTagExact(InputTag) ? TEXT("YES") : TEXT("NO"));
+        
         if (Spec.GetDynamicSpecSourceTags().HasTagExact(InputTag))
         {
             // 입력이 떨어졌음을 스킬 내부로 전달 (WaitInputRelease 노드 등에서 사용)
             ASC->AbilityLocalInputReleased(Spec.InputID);
             
-            UE_LOG(LogTemp, Warning, TEXT(">>> MATCH FOUND! <<<"));
-            bool bActivated = ASC->TryActivateAbility(Spec.Handle);
-            UE_LOG(LogTemp, Warning, TEXT("TryActivateAbility Result: %s"), bActivated ? TEXT("SUCCESS") : TEXT("FAIL"));
+            UE_LOG(LogTemp, Log, TEXT("[Released] Input Tag: %s"), *InputTag.ToString());
         }
     }
 }

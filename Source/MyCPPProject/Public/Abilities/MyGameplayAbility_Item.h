@@ -21,6 +21,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Item")
 	bool ConsumeItem();
 	
+	// (Helper) 마우스 커서 위치의 HitResult 반환
+	UFUNCTION(BlueprintCallable, Category = "Item|Helper")
+	bool GetHeroCursorHit(FHitResult& OutHit) const;
+	
 protected:
 	
 	// 쿨타임 시간 (초 단위)
@@ -44,5 +48,4 @@ protected:
 
 	// 입력 태그를 통해 슬롯 인덱스 계산
 	int32 GetSlotIndexFromInputTag() const;
-	
 };

@@ -10,6 +10,7 @@
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "Experience/MyItemDefinition.h"
 #include "GameplayAbilitySpec.h"
+#include "Abilities/MyGameplayAbility_Item.h"
 #include "Advanced/MyGameplayAbility.h"
 
 UMyInventoryComponent::UMyInventoryComponent()
@@ -124,6 +125,8 @@ void UMyInventoryComponent::EquipItemToSlot(const UMyItemDefinition* ItemDef, in
 	{
 		FGameplayAbilitySpec Spec(ItemDef->ItemAbility);
 		Spec.GetDynamicSpecSourceTags().AddTag(GetInputTagForSlot(SlotIndex));
+		
+		Spec.InputID = 100 + SlotIndex;
 		NewSlotInfo.AbilityHandle = ASC->GiveAbility(Spec);
 	}
 

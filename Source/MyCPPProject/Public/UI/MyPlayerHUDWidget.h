@@ -104,5 +104,4 @@ private:
 	
 	// 태그로 슬롯을 빨리 찾기 위한 맵
 	TMap<FGameplayTag, TObjectPtr<UMySkillSlotWidget>> SkillSlotMap;
-	
 };

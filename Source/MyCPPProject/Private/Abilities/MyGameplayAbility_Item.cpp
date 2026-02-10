@@ -19,6 +19,7 @@ UMyGameplayAbility_Item::UMyGameplayAbility_Item()
 bool UMyGameplayAbility_Item::ConsumeItem()
 {
 	int32 SlotIndex = GetSlotIndexFromInputTag(); // (이 함수는 유지)
+	UE_LOG(LogTemp, Error, TEXT("[Item Ability] Trying to consume Slot: %d from Ability: %s"), SlotIndex, *GetName());
 
 	if (AActor* Avatar = GetAvatarActorFromActorInfo())
 	{
@@ -41,17 +42,45 @@ bool UMyGameplayAbility_Item::ConsumeItem()
 	return false;
 }
 
+bool UMyGameplayAbility_Item::GetHeroCursorHit(FHitResult& OutHit) const
+{
+	if (APlayerController* PC = GetActorInfo().PlayerController.Get())
+	{
+		// TraceChannel은 상황에 맞게 변경 가능 (Visibility 등)
+		return PC->GetHitResultUnderCursor(ECC_Visibility, true, OutHit);
+	}
+	return false;
+}
+
 const FGameplayTagContainer* UMyGameplayAbility_Item::GetCooldownTags() const
 {
 	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
 	MutableTags->Reset();
 
+	// 내 슬롯 번호 찾기
+	int32 SlotIndex = GetSlotIndexFromInputTag();
+	FGameplayTag SlotTag;
+
+	switch (SlotIndex)
+	{
+	case 0: SlotTag = MyGameplayTags::Cooldown_Item_1; break;
+	case 1: SlotTag = MyGameplayTags::Cooldown_Item_2; break;
+	case 2: SlotTag = MyGameplayTags::Cooldown_Item_3; break;
+	case 3: SlotTag = MyGameplayTags::Cooldown_Item_4; break;
+	}
+
+	if (SlotTag.IsValid())
+	{
+		MutableTags->AddTag(SlotTag);
+	}
+
+	// 만약 GA 블루프린트에서 설정한 고유 태그(Cooldown.Item.Potion 등)도 같이 쓰고 싶다면 추가
 	if (CooldownTag.IsValid())
 	{
 		MutableTags->AddTag(CooldownTag);
-		return MutableTags;
 	}
-	return Super::GetCooldownTags();
+
+	return MutableTags;
 }
 
 void UMyGameplayAbility_Item::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
@@ -60,21 +89,24 @@ void UMyGameplayAbility_Item::ApplyCooldown(const FGameplayAbilitySpecHandle Han
 	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
 	if (CooldownGE)
 	{
-		// 1. 쿨타임 이펙트 스펙 생성
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
 		if (SpecHandle.IsValid())
 		{
-			// 2. [SetByCaller] 쿨타임 시간 주입 (태그: SetByCaller.Cooldown)
+			// 시간 설정 (SetByCaller)
 			FGameplayTag DurationTag = FGameplayTag::RequestGameplayTag(FName("SetByCaller.Cooldown"));
 			SpecHandle.Data->SetSetByCallerMagnitude(DurationTag, CooldownDuration);
 
-			// 3. 쿨다운 태그 동적 주입
-			if (CooldownTag.IsValid())
+			// [핵심] GetCooldownTags()가 뱉는 태그들을 그대로 GE에 주입
+			const FGameplayTagContainer* CDTags = GetCooldownTags();
+			if (CDTags)
 			{
-				SpecHandle.Data->DynamicGrantedTags.AddTag(CooldownTag);
+				for (const FGameplayTag& Tag : *CDTags)
+				{
+					SpecHandle.Data->AddDynamicAssetTag(Tag);
+					SpecHandle.Data->DynamicGrantedTags.AddTag(Tag);
+				}
 			}
 
-			// 4. 적용
 			ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 		}
 	}

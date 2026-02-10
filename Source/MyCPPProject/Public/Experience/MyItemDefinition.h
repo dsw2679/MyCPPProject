@@ -6,7 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "MyItemDefinition.generated.h"
 
-class UMyGameplayAbility;
+class UMyGameplayAbility_Item;
 
 /**
  * 
@@ -30,6 +30,6 @@ public:
 	int32 MaxStackCount = 5;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
-	TSubclassOf<UMyGameplayAbility> ItemAbility; // 발동할 GAS 스킬
+	TSubclassOf<UMyGameplayAbility_Item> ItemAbility; // 발동할 GAS 스킬
 	
 };

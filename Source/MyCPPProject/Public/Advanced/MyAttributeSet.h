@@ -115,6 +115,13 @@ public:
 	UFUNCTION()
 	virtual void OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower);
 	
+	// 받는 피해 배율 추가
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData DamageReceiverMultiplier; // 기본값 1.0으로 초기화 필요
+	
+	UFUNCTION()
+	virtual void OnRep_DamageReceiverMultiplier(const FGameplayAttributeData& OldDamageReceiverMultiplier);
+	
 	// 들어오는 데미지 값을 임시로 저장하는 메타 속성
 	UPROPERTY(BlueprintReadOnly, Category = "Lyra|Health", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData Damage;
