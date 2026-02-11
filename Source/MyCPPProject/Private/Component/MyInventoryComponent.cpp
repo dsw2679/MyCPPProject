@@ -212,6 +212,46 @@ void UMyInventoryComponent::SwapQuickSlots(int32 SlotIndexA, int32 SlotIndexB)
 	UE_LOG(LogTemp, Log, TEXT("[Inventory] Swap Fixed: Slot %d <-> %d"), SlotIndexA, SlotIndexB);
 }
 
+void UMyInventoryComponent::RefillItems()
+{
+	for (FMyItemSlotInfo& Slot : BattleItemSlots) {
+		if (Slot.ItemDef) {
+			Slot.CurrentCount = Slot.MaxStackCount;
+		}
+	}
+	BroadcastInventoryMessage(); // UI 갱신 메시지 전송
+}
+
+void UMyInventoryComponent::SetInventoryData(int32 InGold,
+	const TMap<TObjectPtr<const UMyItemDefinition>, int32>& InOwnedItems, const TArray<FMyItemSlotInfo>& InSlots)
+{
+	Gold = InGold;
+	OwnedItems = InOwnedItems;
+	BattleItemSlots = InSlots;
+	
+	// 중요: 새 레벨의 ASC를 찾아서 어빌리티를 다시 부여합니다.
+	UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetOwner());
+	if (ASC)
+	{
+		for (int32 i = 0; i < BattleItemSlots.Num(); ++i)
+		{
+			FMyItemSlotInfo& Slot = BattleItemSlots[i];
+			if (Slot.ItemDef && Slot.ItemDef->ItemAbility)
+			{
+				FGameplayAbilitySpec Spec(Slot.ItemDef->ItemAbility);
+				Spec.GetDynamicSpecSourceTags().AddTag(GetInputTagForSlot(i));
+				Spec.InputID = 100 + i;
+	
+				// 새 핸들 부여
+				Slot.AbilityHandle = ASC->GiveAbility(Spec);
+			}
+		}
+	}
+
+	// 데이터가 복사되었음을 알림
+	BroadcastInventoryMessage();
+}
+
 void UMyInventoryComponent::BroadcastInventoryMessage()
 {
 	if (UWorld* World = GetWorld())

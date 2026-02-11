@@ -215,6 +215,13 @@ void AMyCPPProjectPlayerController::UpdateCachedDestination()
 
 void AMyCPPProjectPlayerController::ToggleInventory()
 {
+	// 권한이 없으면 실행하지 않음
+	if (!bCanOpenInventory)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[UI] Inventory access denied in this area."));
+		return;
+	}
+	
 	if (!RootLayoutInstance || InventoryWidgetClass.IsNull()) return;
 	
 	// 위젯이 레이어에 푸시된 후 실행될 콜백 정의
@@ -269,4 +276,15 @@ void AMyCPPProjectPlayerController::SetInputFocusToGameViewport()
 	InputMode.SetHideCursorDuringCapture(false);
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	SetInputMode(InputMode);
+}
+
+void AMyCPPProjectPlayerController::SetHUDVisibility(bool bVisible)
+{
+	if (UMyPrimaryGameLayout* MyRoot = Cast<UMyPrimaryGameLayout>(RootLayoutInstance))
+	{
+		if (UCommonActivatableWidget* GameHUD = MyRoot->GetGameLayerWidget())
+		{
+			GameHUD->SetVisibility(bVisible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		}
+	}
 }

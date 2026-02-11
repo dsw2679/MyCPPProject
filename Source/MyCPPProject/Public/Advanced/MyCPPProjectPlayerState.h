@@ -23,11 +23,13 @@ class MYCPPPROJECT_API AMyCPPProjectPlayerState : public AModularPlayerState, pu
 	
 public:
 	AMyCPPProjectPlayerState();
-
-	//~ Begin IAbilitySystemInterface
+	
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	//~ End IAbilitySystemInterface
-
+	
+	// 인벤토리 컴포넌트 반환 함수 (Getter)
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	UMyInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+	
 	UMyAttributeSet* GetAttributeSet() const { return AttributeSet; }
 
 protected:
@@ -40,4 +42,7 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UMyAttributeSet> AttributeSet;
+	
+	// Seamless Travel 시 데이터를 복사하기 위한 함수 오버라이드
+	virtual void CopyProperties(APlayerState* PlayerState) override;
 };

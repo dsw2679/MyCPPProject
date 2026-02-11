@@ -17,6 +17,9 @@ AMyCPPProjectGameMode::AMyCPPProjectGameMode()
 	PlayerControllerClass = AMyCPPProjectPlayerController::StaticClass();
 	DefaultPawnClass = AMyCPPProjectCharacter::StaticClass();
 	GameStateClass = AMyCPPProjectGameState::StaticClass();
+	
+	// SeamlessTravel 활성화
+	bUseSeamlessTravel = true;
 }
 
 void AMyCPPProjectGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)

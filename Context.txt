@@ -259,7 +259,7 @@ GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평�
 
 ---
 
- [어제 한 일]
+ [02.09 한 일]
 
 
   1. 핵심 시스템 구조 (C++ Core)
@@ -325,15 +325,71 @@ GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평�
 
 
    * 진행 상태: 포션 사용 및 데이터 동기화까지 확인 완료.
-   * 남은 과제:
-       * 수류탄(투사체) 및 시간 정지(상태이상)의 상세 이펙트 구현.
-       * 아이템 개수가 0개일 때의 UI 처리(그레이스케일 등).
-       * 사용 애니메이션(던지는 모션 등) 연동.
-
-  ---
 
 
   F. 출처
    * [엔진 소스] GameplayAbility.h: ApplyCooldown 및 CommitAbility를 통한 어빌리티 실행 제어 표준 방식 준수. [3]
    * [엔진 소스] UserWidget.h: NativeOnDrop 및 BindWidget을 활용한 UI-C++ 통신 구조.
    * [커뮤니티] CommonUI 포커스 복구는 SetTimerForNextTick을 사용하는 것이 UE5 프로젝트의 공통된 해결책임. [1]
+
+
+[02.10 한일]
+  1. 핵심 구현 내용 (C++ & GAS)
+   * 아이템 시스템 구조:
+       * 데이터: MyItemDefinition (아이템 정보), MyInventoryComponent (소지품/퀵슬롯 관리).
+       * GAS: MyGameplayAbility_Item 베이스 클래스 구현. SetByCaller로 쿨타임/데미지/무력화 수치 동적 제어.
+       * UI: MyItemSlotWidget이 MyPlayerHUDWidget을 통해 쿨타임 태그 변화(Cooldown.Item.1~4)를 감지하여 시각화(빙글빙글 효과).
+
+
+   * 아이템별 기능 구현:
+       * 포션 (`GA_Item_Potion`): ConsumeItem 후 체력 회복 GE 적용.
+       * 수류탄 (`GA_Item_Grenade`): 투사체(AMyGrenadeProjectile) 스폰. SetByCaller로 계산된 데미지/무력화 Spec을 투사체에 전달 -> 충돌 시 타겟에게 적용.
+       * 아드로핀 (`GA_Item_Adropine`): 버프(공/이속)와 디메리트(체력 감소) 동시 적용.
+       * 시간 정지 (`GA_Item_TimeStop`): 3초간 무적/행동불가 태그(State.Invincible, State.Debuff.Stun) 적용 및 황금색 오버레이 머티리얼(GCNL_TimeStop) 연출.
+
+  2. 해결된 주요 이슈 (디버깅 히스토리)
+  이 부분은 다음 작업자가 시스템을 이해하는 데 매우 중요합니다.
+
+
+   * ⚠️ 이슈 1: 1번 키 입력 시 모든 아이템 동시 발동
+       * 원인: GAS가 동적 태그(InputTag.Item.1)만으로는 어빌리티 인스턴스를 구분하지 못하고, ClearAbility 타이밍 이슈로 슬롯에 여러 어빌리티가 중첩됨.
+       * 해결: MyInventoryComponent::EquipItemToSlot에서 각 슬롯에 고유한 `InputID` (100 + SlotIndex)를 부여하여 물리적 입력 채널을 분리함.
+
+
+   * ⚠️ 이슈 2: 쿨타임 UI 미작동 (빙글빙글 안 돔)
+       * 원인: ApplyCooldown에서 태그를 넣었으나, GAS 시스템이 GetCooldownTags를 통해 이를 "공식 쿨타임 태그"로 인지하지 못해 이벤트를 발생시키지 않음.
+       * 해결: MyGameplayAbility_Item::GetCooldownTags를 오버라이드하여, 현재 슬롯 인덱스에 맞는 태그(Cooldown.Item.1~4)를 반환하도록 수정함.
+
+
+   * ⚠️ 이슈 3: 하나만 썼는데 모든 아이템이 쿨타임 걸림 (공유 쿨타임)
+       * 원인: 쿨타임 GE(GE_Cooldown_Base) 에셋 자체에 Granted Tags가 설정되어 있어, 모든 아이템이 같은 태그를 공유함.
+       * 해결: GE 에셋의 태그를 비우고, C++ ApplyCooldown에서 오직 해당 슬롯 태그만 동적으로 주입하도록 변경함.
+
+
+  3. 파일 및 클래스 현황
+   * C++:
+       * MyInventoryComponent.cpp: 장착 시 InputID 부여 로직 포함.
+       * MyGameplayAbility_Item.cpp: ApplyCooldown 및 GetCooldownTags 오버라이드로 슬롯별 독립 쿨타임 구현.
+       * MyPlayerHUDWidget.cpp: SkillSlotMap 초기화 및 아이템 태그(Cooldown.Item.*) 리스너 등록.
+       * MyGrenadeProjectile.cpp: 충돌 시 Spec 적용 및 GameplayCue 실행.
+   * Blueprint/Asset:
+       * GA_Item_xxx: CommitAbility 사용, Cooldown GE 연결됨.
+       * GE_Cooldown_Base: 태그 비워둠 (코드 제어).
+       * GCNL_TimeStop: 황금색 오버레이 머티리얼 연출.
+
+
+[오늘 할일]
+레벨(맵) 작업, 컷신고려
+현재 구상도 : 로딩스크린(프리로드 고려), 메인메뉴에서 게임시작 버튼으로 레벨 진입, 처음시작 레벨은 상점 레벨. 상점에서 필요한 배틀아이템 구매후 실제 전투가 벌어지는 배틀레벨로 진입(배틀레벨에서는 아이템구매 불가)
+보스 등장 컷신, 보스등장 컷신후 플레이어 화면에 나오는 WBP_BossInfo, 보스 처치시 컷신후 결과창(컷신이 끝날때부터 타이머를 돌려 처치시간 기록)과 게임종료버튼. 플레이어 사망시 재도전 버튼과 재정비 버튼과 게임종료버튼. 재도전버튼 클릭시 보스등장 컷신을 빼고 즉시 재도전 할 수 있게(배틀아이템 자동리필).
+재정비 버튼 클릭시 상점레벨로 돌아가서 배틀아이템 재정비. 게임종료 버튼시 게임종료.
+
+  ---
+
+[남은 잔업 (로드맵 전부 구현 후 제작 목록)]
+1. 보스 ai 보강
+2. 보스 clap 패턴 장판 추가
+3. 보스 피통 하단에 debuff ui 추가
+4. 플레이어 피격모션 추가
+5. 보스, 플레이어 hp 0 시 죽음
+6. 보스 조우시 WBP_BossInfo를 wbp_myhudlayout에 추가하는식으로

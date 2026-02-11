@@ -33,19 +33,14 @@ public class MyCPPProject : ModuleRules
 			"CommonUser",
 			"UIExtension",
 			"GameplayMessageRuntime",
-			"MotionWarping"
+			"MotionWarping",
+			"LevelSequence" ,
+			"MovieScene"
 		});
-
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		
 
 		PublicIncludePaths.AddRange(new string[] {
-			"MyCPPProject",
-			"MyCPPProject/Variant_Strategy",
-			"MyCPPProject/Variant_Strategy/UI",
-			"MyCPPProject/Variant_TwinStick",
-			"MyCPPProject/Variant_TwinStick/AI",
-			"MyCPPProject/Variant_TwinStick/Gameplay",
-			"MyCPPProject/Variant_TwinStick/UI"
+			"MyCPPProject"
 		});
 
 		//Uncomment if you are using Slate UI

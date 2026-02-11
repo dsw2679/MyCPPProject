@@ -82,6 +82,10 @@ protected:
 	// 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UMyDamageTextManagerComponent> DamageTextManagerComponent;
+	
+	// 인벤토리 오픈 가능한지 체크하는 bool값
+	UPROPERTY(VisibleInstanceOnly, Category = "UI")
+	bool bCanOpenInventory = false; // 기본값은 false
 
 public:
 
@@ -95,6 +99,16 @@ public:
 	void ToggleInventory();
 	void SetInputFocusToGameViewport();
 
+	// HUD가시성 조절함수
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void SetHUDVisibility(bool bVisible);
+	
+	// 루트 접근 함수
+	UPrimaryGameLayout* GetRootLayout() const { return RootLayoutInstance; }
+	
+	// 인벤토리 오픈 가능 여부 설정
+	void SetCanOpenInventory(bool bCanOpen) { bCanOpenInventory = bCanOpen; }
+	
 protected:
 
 	/** Initialize input bindings */

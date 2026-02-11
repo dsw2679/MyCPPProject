@@ -3,8 +3,29 @@
 
 #include "MyHUDLayout.h"
 #include "CommonInputSubsystem.h"
+#include "Components/NamedSlot.h"
 #include "Framework/Application/SlateApplication.h"
 
+
+void UMyHUDLayout::AddBossInfoWidget(UUserWidget* BossWidget)
+{
+	if (BossInfoSlot && BossWidget) BossInfoSlot->SetContent(BossWidget);
+}
+
+void UMyHUDLayout::SetPressINotificationVisible(bool bVisible, TSubclassOf<UUserWidget> NotificationClass)
+{
+	if (!NotificationSlot) return;
+
+	if (bVisible && NotificationClass)
+	{
+		UUserWidget* NotifyWidget = CreateWidget<UUserWidget>(this, NotificationClass);
+		NotificationSlot->SetContent(NotifyWidget);
+	}
+	else
+	{
+		NotificationSlot->SetContent(nullptr);
+	}
+}
 
 TOptional<FUIInputConfig> UMyHUDLayout::GetDesiredInputConfig() const
 {

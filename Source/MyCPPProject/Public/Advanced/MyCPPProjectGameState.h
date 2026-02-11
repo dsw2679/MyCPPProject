@@ -21,9 +21,14 @@ public:
 
 	// 외부에서 컴포넌트에 접근할 수 있는 Getter
 	UMyExperienceManagerComponent* GetExperienceManagerComponent() const { return ExperienceManagerComponent; }
+	
+	void StartCombatTimer() { StartTime = GetServerWorldTimeSeconds(); }
+	float StopCombatTimer() { return GetServerWorldTimeSeconds() - StartTime; }
 
 protected:
 	// 우리가 만든 경험 관리자 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = "Experience")
 	TObjectPtr<UMyExperienceManagerComponent> ExperienceManagerComponent;
+	
+	float StartTime;
 };

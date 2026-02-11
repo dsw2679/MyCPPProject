@@ -42,6 +42,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	int32 GetCurrentGold() const { return Gold; }
 	
+	// 아이템 리필
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void RefillItems();
+	
+	void SetInventoryData(int32 InGold, const TMap<TObjectPtr<const UMyItemDefinition>, int32>& InOwnedItems, const TArray<FMyItemSlotInfo>& InSlots);
+	
+	// 배틀 아이템 슬롯 정보 반환 (Getter)
+	const TArray<FMyItemSlotInfo>& GetBattleItemSlots() const { return BattleItemSlots; }
+	
 protected:
 	void BroadcastInventoryMessage();
 	
