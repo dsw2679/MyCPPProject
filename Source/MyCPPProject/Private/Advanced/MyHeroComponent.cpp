@@ -77,7 +77,7 @@ void UMyHeroComponent::OnExperienceLoaded(const UMyExperienceDefinition* Experie
     APawn* Pawn = GetPawn<APawn>();
     if (!Pawn) return;
     
-    // 1. GAS 초기화 및 스킬 부여
+    // GAS 초기화 및 스킬 부여
     IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Pawn);
     if (ASI)
     {
@@ -122,10 +122,19 @@ void UMyHeroComponent::OnExperienceLoaded(const UMyExperienceDefinition* Experie
         }
     }
 
-    // 2. 입력 바인딩 (로딩이 늦게 끝난 경우 여기서 다시 한번 시도)
+    // 입력 바인딩 (로딩이 늦게 끝난 경우 여기서 다시 한번 시도)
     if (Pawn->InputComponent)
     {
         InitializePlayerInput(Pawn->InputComponent);
+    }
+    
+    // 로딩 완료를 컨트롤러에 알림
+    if (Pawn)
+    {
+        if (AMyCPPProjectPlayerController* PC = Cast<AMyCPPProjectPlayerController>(Pawn->GetController()))
+        {
+            PC->OnExperienceLoadCompleted();
+        }
     }
 }
 

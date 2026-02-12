@@ -3,6 +3,8 @@
 
 #include "Level/MyLevelTransitionTrigger.h"
 
+#include "MyCPPProjectPlayerController.h"
+#include "Advanced/MyGameInstance.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
@@ -25,21 +27,16 @@ void AMyLevelTransitionTrigger::OnOverlapBegin(UPrimitiveComponent* OverlappedCo
 {
 	if (OtherActor && OtherActor->IsA(ACharacter::StaticClass()))
 	{
-		if (!TargetLevel.IsNull())
+		if (AMyCPPProjectPlayerController* PC = Cast<AMyCPPProjectPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
 		{
-			// 레벨 전환 실행
-			//UGameplayStatics::OpenLevelBySoftObjectPtr(this, TargetLevel);
-			UWorld* World = GetWorld();
-			if (World)
-			{
-				// 더 안전한 경로 추출 방식
-				FString LevelPath = TargetLevel.GetAssetName();
-
-				UE_LOG(LogTemp, Warning, TEXT("[Travel] Attempting ServerTravel to: %s"), *LevelPath);
-				// ServerTravel 실행 (Seamless Travel의 핵심 함수)
-				// 첫 번째 인자는 이동할 레벨 경로, 두 번째는 절대 경로 여부
-				World->ServerTravel(LevelPath, false);
+			if (UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance())) {
+				GI->bIsLoadingInProgress = true;
+				// 배틀 레벨로 이동함을 명시! (그래야 이미지가 맞게 나옵니다)
+				GI->CurrentLoadingType = ELoadingScreenType::ToBattle;
 			}
+
+			FString LevelPath = TargetLevel.GetAssetName();
+			PC->PrepareLevelTransition(LevelPath);
 		}
 	}
 }

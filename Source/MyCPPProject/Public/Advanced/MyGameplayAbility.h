@@ -98,4 +98,13 @@ private:
 	// 태그 컨테이너를 반환하기 위한 임시 저장소
 	UPROPERTY(Transient)
 	FGameplayTagContainer TempCooldownTags;
+	
+protected:
+	// 컨트롤러를 미리 캐스팅해서 반환하는 헬퍼 함수
+	UFUNCTION(BlueprintPure, Category = "Lyra|Ability")
+	AMyCPPProjectPlayerController* GetMyPlayerController() const;
+	
+	// 보스 사망 메시지를 전송하는 함수
+	UFUNCTION(BlueprintCallable, Category = "Boss")
+	void BroadcastBossDeathMessage();
 };

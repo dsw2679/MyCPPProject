@@ -13,6 +13,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Advanced/MyCPPProjectPlayerState.h"
 #include "MotionWarpingComponent.h"
+#include "MyGameplayTags.h"
 #include "NiagaraSystem.h"
 #include "Advanced/MyAttributeSet.h"
 #include "Materials/Material.h"
@@ -97,6 +98,9 @@ void AMyCPPProjectCharacter::PossessedBy(AController* NewController)
 				ASC->GetGameplayAttributeValueChangeDelegate(
 					MySet->GetMoveSpeedAttribute()
 				).AddUObject(this, &AMyCPPProjectCharacter::OnMoveSpeedChanged);
+				
+				// health
+				ASC->GetGameplayAttributeValueChangeDelegate(MySet->GetHealthAttribute()).AddUObject(this, &AMyCPPProjectCharacter::OnHealthChanged);
 			}
 		}
 	}
@@ -117,7 +121,6 @@ void AMyCPPProjectCharacter::OnRep_PlayerState()
 			HeroComponent->InitializeAbilitySystem();
 		}
 	}
-	
 }
 
 void AMyCPPProjectCharacter::BeginPlay()
@@ -147,5 +150,25 @@ void AMyCPPProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 	{
 		HeroComponent->InitializePlayerInput(PlayerInputComponent);
 	}
-	
+}
+
+void AMyCPPProjectCharacter::HandleDeath()
+{
+	// 죽음 상태 태그 즉시 부여 (중복 실행 방지 및 타 어빌리티 차단)
+	AbilitySystemComponent->AddLooseGameplayTag(MyGameplayTags::State_Dead);
+
+	// GA_Death 어빌리티 실행
+	FGameplayTagContainer DeathTagContainer;
+	DeathTagContainer.AddTag(MyGameplayTags::Ability_Type_Death);
+
+	// 태그를 가진 어빌리티(GA_Death)를 찾아 실행
+	AbilitySystemComponent->TryActivateAbilitiesByTag(DeathTagContainer);
+}
+
+void AMyCPPProjectCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
+{
+	if (Data.NewValue <= 0.0f && !AbilitySystemComponent->HasMatchingGameplayTag(MyGameplayTags::State_Dead))
+	{
+		HandleDeath();
+	}
 }

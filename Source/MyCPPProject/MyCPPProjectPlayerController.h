@@ -79,14 +79,26 @@ protected:
 	UPROPERTY()
 	TObjectPtr<class UPrimaryGameLayout> RootLayoutInstance;
 	
-	// 컴포넌트
+	// 데미지 텍스트 매니저 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UMyDamageTextManagerComponent> DamageTextManagerComponent;
 	
 	// 인벤토리 오픈 가능한지 체크하는 bool값
 	UPROPERTY(VisibleInstanceOnly, Category = "UI")
 	bool bCanOpenInventory = false; // 기본값은 false
-
+	
+	// 결과창 위젯 클래스 (WBP_ResultScreen)
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSoftClassPtr<UCommonActivatableWidget> ResultWidgetClass;
+	
+	// 배틀 로딩 위젯 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSoftClassPtr<UCommonActivatableWidget> LoadingWidgetClass;
+	
+	// 배틀 로딩 위젯 클래스
+	UPROPERTY()
+	TObjectPtr<UCommonActivatableWidget> LoadingWidgetInstance;
+	
 public:
 
 	/** Constructor */
@@ -99,18 +111,33 @@ public:
 	void ToggleInventory();
 	void SetInputFocusToGameViewport();
 
+	// 공용 위젯 푸시 함수 (사망창, 결과창 등에 사용)
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void PushWidgetToModalLayer(TSoftClassPtr<UCommonActivatableWidget> WidgetClass);
+	
 	// HUD가시성 조절함수
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void SetHUDVisibility(bool bVisible);
-	
+
 	// 루트 접근 함수
 	UPrimaryGameLayout* GetRootLayout() const { return RootLayoutInstance; }
 	
 	// 인벤토리 오픈 가능 여부 설정
 	void SetCanOpenInventory(bool bCanOpen) { bCanOpenInventory = bCanOpen; }
 	
+	// 레벨 이름을 받아 Seamless Travel을 실행하는 함수
+	UFUNCTION(BlueprintCallable, Category = "Level")
+	void TravelToLevel(FString LevelName);
+	
+	// experience 로딩이 끝나면
+	void OnExperienceLoadCompleted();
+	
+	// 레벨 전환 준비
+	// @param LevelName - 이동할 대상 레벨 이름
+	UFUNCTION(BlueprintCallable, Category = "Level")
+	void PrepareLevelTransition(FString LevelName);
+	
 protected:
-
 	/** Initialize input bindings */
 	virtual void SetupInputComponent() override;
 	
@@ -128,6 +155,14 @@ protected:
 	/** Helper function to get the move destination */
 	void UpdateCachedDestination();
 	
+	// 보스 죽음 메시지 받으면
+	void OnBossDeadReceived(FGameplayTag Channel, const FMyBossMessageStruct& Payload);
+	
+	// 로딩스크린 push
+	void ShowLoadingScreen();
+	
+	// 레벨 이동 전 로딩창이 뜨는 동안 대상 경로를 임시 보관할 변수
+	FString PendingLevelPath;
 };
 
 

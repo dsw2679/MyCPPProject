@@ -76,5 +76,7 @@ public:
 	
 protected:
 	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
+	void HandleDeath();
+	void OnHealthChanged(const FOnAttributeChangeData& Data);
 };
 

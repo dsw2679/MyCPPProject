@@ -23,6 +23,8 @@ public:
 	UMyExperienceManagerComponent* GetExperienceManagerComponent() const { return ExperienceManagerComponent; }
 	
 	void StartCombatTimer() { StartTime = GetServerWorldTimeSeconds(); }
+	
+	UFUNCTION(BlueprintCallable)
 	float StopCombatTimer() { return GetServerWorldTimeSeconds() - StartTime; }
 
 protected:

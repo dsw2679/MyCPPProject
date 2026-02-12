@@ -57,6 +57,8 @@ protected:
 	// 태그 변경 감지 함수 (돌진 시작될 때 목록 초기화하려고 씀)
 	virtual void OnDashTagChanged(const FGameplayTag Tag, int32 NewCount);
 	
+	void HandleDeath();
+
 	// 이 보스가 사용할 데이터 에셋
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss")
 	TObjectPtr<const UMyPawnData> PawnData;

@@ -378,18 +378,60 @@ GAS(Gameplay Ability System)를 기반으로 QWERASDF 총 8종의 스킬과 평�
        * GCNL_TimeStop: 황금색 오버레이 머티리얼 연출.
 
 
+[02.11 한 일]
+  📋 작업 요약 (Summary)
+
+
+   1. 레벨 전환 시스템: AMyLevelTransitionTrigger와 ServerTravel을 사용하여 상점(L_Shop)에서 전투 레벨(L_Battle)로 이동하는 파이프라인을 구축했습니다.
+   2. 데이터 영속성 (Seamless Travel): PlayerState의 CopyProperties를 활용하여 레벨 이동 시에도 골드, 인벤토리 아이템, 그리고 GAS 어빌리티가 유실되지 않고 유지되도록 구현했습니다.
+   3. 보스 조우 시퀀스: 문 앞 트리거(AMyBossEncounterTrigger) 진입 시 HUD를 숨기고 컷신을 재생한 후, 플레이어를 건물 안으로 이동시키고 보스 UI(WBP_BossInfo)를 동적으로 띄우는 연출을 완성했습니다.
+   4. 구역 기반 기능 제한: AMyShopAreaTrigger를 통해 특정 상점 구역에서만 인벤토리를 열 수 있게 제한하고, 해당 구역 진입 시 WBP_PressI 안내 UI가 나타나도록 처리했습니다.
+   5. 동적 UI 관리: MyHUDLayout의 NamedSlot을 활용하여 알림(PressI) 및 보스 정보(BossInfo) 위젯을 필요할 때만 C++에서 생성하여 꽂아넣는 효율적인 구조를 확립했습니다.
+
+  ---
+
+  ✅ 구현 완료 상세 (Checklist)
+
+
+   * [C++ / Level] `AMyLevelTransitionTrigger`
+       * ServerTravel 호출로 끊김 없는 레벨 이동 구현.
+       * TargetLevel을 Soft 참조로 관리하여 메모리 최적화.
+   * [C++ / GAS] `UMyInventoryComponent` & `PlayerState`
+       * CopyProperties 오버라이드로 이전 레벨의 인벤토리 데이터 전송.
+       * SetInventoryData를 통해 새 레벨의 캐릭터에게 GAS 어빌리티 재부여 완료.
+       * RefillItems 함수로 재도전 시 아이템 자동 보충 로직 마련.
+   * [C++ / UI] `UMyHUDLayout` 확장
+       * NotificationSlot, BossInfoSlot을 통해 동적 위젯 삽입 기능 구현.
+       * SetHUDVisibility 함수를 PlayerController에 추가하여 컷신 연출 편의성 확보.
+   * [C++ / System] `AMyCPPProjectGameState`
+       * 전투 기록 측정을 위한 StartCombatTimer, StopCombatTimer 구현.
+
+
 [오늘 할일]
+   1. 보스 처치/사망 처리:
+       * 보스 체력 0 시점에 StopCombatTimer 호출 및 WBP_ResultScreen 표시.
+       * 보스 사망 컷신(LS_BossDeath) 연동 및 BossInfoSlot 비우기.
+   2. 게임 종료/재도전 팝업:
+       * 사망 시 WBP_GameOver 호출.
+       * [재도전] 버튼: RefillItems -> ServerTravel (Battle Level).
+       * [재정비] 버튼: ServerTravel (Shop Level).
+   3. 폴리싱 (UI/VFX):
+       * 레벨 이동 및 공간 이동(순간이동) 시 Camera Fade 효과 적용.
+       * 보스 조우 시 WBP_BossInfo가 나타날 때 애니메이션 연출 추가.
+
+
 레벨(맵) 작업, 컷신고려
-현재 구상도 : 로딩스크린(프리로드 고려), 메인메뉴에서 게임시작 버튼으로 레벨 진입, 처음시작 레벨은 상점 레벨. 상점에서 필요한 배틀아이템 구매후 실제 전투가 벌어지는 배틀레벨로 진입(배틀레벨에서는 아이템구매 불가)
-보스 등장 컷신, 보스등장 컷신후 플레이어 화면에 나오는 WBP_BossInfo, 보스 처치시 컷신후 결과창(컷신이 끝날때부터 타이머를 돌려 처치시간 기록)과 게임종료버튼. 플레이어 사망시 재도전 버튼과 재정비 버튼과 게임종료버튼. 재도전버튼 클릭시 보스등장 컷신을 빼고 즉시 재도전 할 수 있게(배틀아이템 자동리필).
+현재 구상도 : 로딩스크린(프리로드 고려), 메인메뉴에서 게임시작 버튼으로 레벨 진입,  보스 등장 컷신, 보스등장 컷신후 플레이어 화면에 나오는 WBP_BossInfo, 
+보스 처치시 컷신후 결과창(컷신이 끝날때부터 타이머를 돌려 처치시간 기록)과 게임종료버튼. 플레이어 사망시 재도전 버튼과 재정비 버튼과 게임종료버튼. 
+재도전버튼 클릭시 보스등장 컷신을 빼고 즉시 재도전 할 수 있게(배틀아이템 자동리필).
 재정비 버튼 클릭시 상점레벨로 돌아가서 배틀아이템 재정비. 게임종료 버튼시 게임종료.
 
   ---
 
 [남은 잔업 (로드맵 전부 구현 후 제작 목록)]
+
+
+
 1. 보스 ai 보강
-2. 보스 clap 패턴 장판 추가
-3. 보스 피통 하단에 debuff ui 추가
-4. 플레이어 피격모션 추가
-5. 보스, 플레이어 hp 0 시 죽음
-6. 보스 조우시 WBP_BossInfo를 wbp_myhudlayout에 추가하는식으로
+2. 보스 피통 하단에 debuff ui 추가
+3. 플레이어 피격모션 추가

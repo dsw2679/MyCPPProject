@@ -85,4 +85,8 @@ namespace MyGameplayTags
 	
 	// 게임 플레이 큐
 	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Grenade_Explosion);
+	
+	// 죽음 어빌리티
+	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Type_Death);
+	MYCPPPROJECT_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);
 }

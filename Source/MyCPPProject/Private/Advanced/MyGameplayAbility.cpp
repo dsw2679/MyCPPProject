@@ -3,10 +3,13 @@
 
 #include "Advanced/MyGameplayAbility.h"
 #include "AbilitySystemComponent.h"
+#include "MyCPPProjectPlayerController.h"
+#include "MyGameplayTags.h"
 #include "Advanced/MyAttributeSet.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Message/MyBossMessageStruct.h"
 
 UMyGameplayAbility::UMyGameplayAbility()
 {
@@ -192,33 +195,33 @@ void UMyGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, cons
 bool UMyGameplayAbility::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
                                    FGameplayTagContainer* OptionalRelevantTags) const
 {
-	// 1. 기본 비용 GE 가져오기
+	// 기본 비용 GE 가져오기
 	UGameplayEffect* CostGE = GetCostGameplayEffect();
 	if (!CostGE)
 	{
-		return true; // 비용 없으면 통과
+		return true;
 	}
 
-	// 2. ActorInfo 및 ASC 유효성 검사
+	// ActorInfo 및 ASC 유효성 검사
 	if (!ActorInfo || !ActorInfo->AbilitySystemComponent.IsValid())
 	{
 		return false;
 	}
 
-	// 3. Spec 생성 (임시)
+	// Spec 생성
 	FGameplayEffectContextHandle Context = ActorInfo->AbilitySystemComponent->MakeEffectContext();
 	Context.AddSourceObject(this);
 
 	// CDO를 사용해 Spec 생성
 	FGameplayEffectSpec Spec(CostGE, Context, GetAbilityLevel());
 
-	// 4. SetByCaller 값 주입 (핵심!)
+	// SetByCaller 값 주입
 	for (const TPair<FGameplayTag, float>& Pair : CostMap)
 	{
 		Spec.SetSetByCallerMagnitude(Pair.Key, Pair.Value);
 	}
 
-	// 5. 직접 속성 검사 (Super::CheckCost를 부르면 에러가 나므로 직접 구현)
+	// 직접 속성 검사 (Super::CheckCost를 부르면 에러가 나므로 직접 구현)
 	for (int32 ModIdx = 0; ModIdx < Spec.Modifiers.Num(); ++ModIdx)
 	{
 		const FGameplayModifierInfo& ModDef = Spec.Def->Modifiers[ModIdx];
@@ -264,26 +267,34 @@ void UMyGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	// 1. 컨트롤러 가져오기
+	// 컨트롤러 가져오기
 	if (ActorInfo->PlayerController.IsValid())
 	{
-		// 2. 이동 멈추기 (StopMovement)
+		// 이동 멈추기 (StopMovement)
 		ActorInfo->PlayerController->StopMovement();
-
-		// PathFollowingComponent도 확실하게 멈추고 싶다면:
-		// ActorInfo->PlayerController->GetPathFollowingComponent()->AbortMove(*this, FPathFollowingResultFlags::OwnerFinished);
+		
 	}
-	// else if (ActorInfo->AvatarActor.IsValid())
-	// {
-	// 	// AI 컨트롤러나 다른 경우 대비
-	// 	if (APawn* Pawn = Cast<APawn>(ActorInfo->AvatarActor.Get()))
-	// 	{
-	// 		if (AController* Controller = Pawn->GetController())
-	// 		{
-	// 			Controller->StopMovement();
-	// 		}
-	// 	}
-	// }
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+}
+
+AMyCPPProjectPlayerController* UMyGameplayAbility::GetMyPlayerController() const
+{
+	return Cast<AMyCPPProjectPlayerController>(GetActorInfo().PlayerController.Get());
+}
+
+void UMyGameplayAbility::BroadcastBossDeathMessage()
+{
+	if (UWorld* World = GetWorld())
+	{
+		// 전송할 메시지(Payload) 구성
+		FMyBossMessageStruct Message;
+		Message.BossActor = GetAvatarActorFromActorInfo(); // 죽은 보스 자신
+		Message.BossASC = GetAbilitySystemComponentFromActorInfo();
+
+		// 메시지 시스템을 통해 전송 (Channel: Message.Boss.Dead)
+		UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(World);
+		MessageSubsystem.BroadcastMessage(MyGameplayTags::Message_Boss_Dead, Message);
+		
+	}
 }
 

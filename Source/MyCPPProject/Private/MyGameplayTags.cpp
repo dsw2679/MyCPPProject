@@ -75,4 +75,8 @@ namespace MyGameplayTags
 	
 	// 게임 플레이 큐
 	UE_DEFINE_GAMEPLAY_TAG(GameplayCue_Grenade_Explosion, "GameplayCue.Grenade.Explosion");
+	
+	// 죽음 어빌리티
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Type_Death, "Ability.Type.Death");
+	UE_DEFINE_GAMEPLAY_TAG(State_Dead, "State.Dead");
 }

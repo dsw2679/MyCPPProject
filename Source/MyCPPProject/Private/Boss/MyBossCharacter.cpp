@@ -308,6 +308,12 @@ void AMyBossCharacter::OnBossInfoRequested(FGameplayTag Channel, const struct FM
 
 void AMyBossCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
+	// 체력이 0 이하가 되면 죽음 처리
+	if (Data.NewValue <= 0.0f && !AbilitySystemComponent->HasMatchingGameplayTag(MyGameplayTags::State_Dead))
+	{
+		HandleDeath();
+	}
+	
 	if (const UMyAttributeSet* AS = Cast<UMyAttributeSet>(AttributeSet))
 	{
 		FMyBossHealthMessage Msg;
@@ -340,4 +346,17 @@ void AMyBossCharacter::OnDashTagChanged(const FGameplayTag Tag, int32 NewCount)
 		SpeedburstHitActors.Empty();
 		UE_LOG(LogTemp, Warning, TEXT("[Boss] Speedburst Start! Hit List Cleared."));
 	}
+}
+
+void AMyBossCharacter::HandleDeath()
+{
+	// 죽음 상태 태그 즉시 부여 (중복 실행 방지 및 타 어빌리티 차단)
+	AbilitySystemComponent->AddLooseGameplayTag(MyGameplayTags::State_Dead);
+
+	// GA_Death 어빌리티 실행
+	FGameplayTagContainer DeathTagContainer;
+	DeathTagContainer.AddTag(MyGameplayTags::Ability_Type_Death);
+
+	// 태그를 가진 어빌리티(GA_Death)를 찾아 실행
+	AbilitySystemComponent->TryActivateAbilitiesByTag(DeathTagContainer);
 }
