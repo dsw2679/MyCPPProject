@@ -8,6 +8,7 @@
 #include "Message/MyBossMessageStruct.h"
 #include "MyCPPProjectPlayerController.generated.h"
 
+class UMyCinematicComponent;
 class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
@@ -83,6 +84,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UMyDamageTextManagerComponent> DamageTextManagerComponent;
 	
+	// 시네마틱 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cinematic")
+	TObjectPtr<UMyCinematicComponent> CinematicComponent;
+	
 	// 인벤토리 오픈 가능한지 체크하는 bool값
 	UPROPERTY(VisibleInstanceOnly, Category = "UI")
 	bool bCanOpenInventory = false; // 기본값은 false
@@ -137,6 +142,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	void PrepareLevelTransition(FString LevelName);
 	
+	// l_battle로 진입시 컷신 로직
+	void PlayBattleIntroCutscene();
+	
+	// 로딩이 끝나면
+	void FinishLoading();
+	
+	// HUD 생성
+	void CreateHUD();
+
+	// 로딩스크린 push
+	UFUNCTION(BlueprintCallable, Category = "Level")
+	void ShowLoadingScreen();
+	
+	// 심리스 트래블 후 호출됨
+	virtual void PostSeamlessTravel() override; 
+	
+	// UI 초기화 통합 함수
+	void InitializeUI();
+	
 protected:
 	/** Initialize input bindings */
 	virtual void SetupInputComponent() override;
@@ -158,8 +182,6 @@ protected:
 	// 보스 죽음 메시지 받으면
 	void OnBossDeadReceived(FGameplayTag Channel, const FMyBossMessageStruct& Payload);
 	
-	// 로딩스크린 push
-	void ShowLoadingScreen();
 	
 	// 레벨 이동 전 로딩창이 뜨는 동안 대상 경로를 임시 보관할 변수
 	FString PendingLevelPath;

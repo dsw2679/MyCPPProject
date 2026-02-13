@@ -38,8 +38,19 @@ void UMyHUDLayout::NativeConstruct()
 	
 	bSupportsActivationFocus = true;
 	
-	
 	Super::NativeConstruct();
+	
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		// CommonUI가 설정을 마친 직후(NextTick)에 다시 우리 값으로 고정
+		GetWorld()->GetTimerManager().SetTimerForNextTick([PC]() {
+			PC->bShowMouseCursor = true;
+			FInputModeGameAndUI InputMode;
+			InputMode.SetHideCursorDuringCapture(false); // 여기서 다시 False로 강제
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PC->SetInputMode(InputMode);
+		});
+	}
 }
 
 void UMyHUDLayout::NativeOnActivated()

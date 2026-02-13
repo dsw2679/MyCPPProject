@@ -115,8 +115,24 @@ void UMyItemSlotWidget::NativeConstruct()
 		{
 			UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(World);
 			MessageSubsystem.RegisterListener(MyGameplayTags::Message_Inventory_Updated, this, &UMyItemSlotWidget::OnInventoryUpdated);
+			
+			// 초기 데이터 동기화 
+			if (APlayerState* PS = GetOwningPlayerState())
+			{
+				// PlayerState에서 인벤토리 컴포넌트를 찾습니다.
+				if (UMyInventoryComponent* InvComp = PS->FindComponentByClass<UMyInventoryComponent>())
+				{
+					// 컴포넌트가 가진 현재 슬롯 정보 배열을 가져옵니다.
+					const TArray<FMyItemSlotInfo>& Slots = InvComp->GetBattleItemSlots();
 
-			UE_LOG(LogTemp, Warning, TEXT("[UI] Slot %d Registered as Listener"), MySlotIndex);
+					// 내 슬롯 번호(MySlotIndex)가 유효한지 확인하고 데이터를 주입합니다.
+					if (Slots.IsValidIndex(MySlotIndex))
+					{
+						UpdateItemData(Slots[MySlotIndex]);
+						UE_LOG(LogTemp, Log, TEXT("[UI] Slot %d Initialized with current data."), MySlotIndex);
+					}
+				}
+			}
 		}
 	}
 	else

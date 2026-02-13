@@ -26,4 +26,19 @@ public:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Loading")
 	ELoadingScreenType CurrentLoadingType = ELoadingScreenType::InitialStart;
+	
+	// 로딩창 시작
+	void StartLoadingScreen();
+	// 로딩창 종료
+	void StopLoadingScreen();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Loading")
+	TSoftClassPtr<UUserWidget> LoadingWidgetClass;
+	
+private:
+	UPROPERTY()
+	TObjectPtr<UUserWidget> LoadingWidgetInstance;
+
+	// 엔진 뷰포트에 추가된 위젯을 관리하기 위한 변수
+	TSharedPtr<SWidget> LoadingSlateWidget;
 };

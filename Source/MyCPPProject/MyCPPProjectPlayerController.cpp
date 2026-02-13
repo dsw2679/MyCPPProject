@@ -17,8 +17,10 @@
 #include "AbilitySystemGlobals.h"
 #include "Advanced/MyGameInstance.h"
 #include "Advanced/ControllerComponent/MyDamageTextManagerComponent.h"
+#include "Component/MyCinematicComponent.h"
 #include "UI/MyUserWidget.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Kismet/GameplayStatics.h"
 #include "Widgets/SViewport.h"
 
 AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
@@ -26,6 +28,9 @@ AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 	bIsTouch = false;
 	bMoveToMouseCursor = false;
 
+	FInputModeGameAndUI InputMode;
+	InputMode.SetHideCursorDuringCapture(false);
+	
 	// create the path following comp
 	PathFollowingComponent = CreateDefaultSubobject<UPathFollowingComponent>(TEXT("Path Following Component"));
 	PathFollowingComponent->Initialize();
@@ -36,8 +41,11 @@ AMyCPPProjectPlayerController::AMyCPPProjectPlayerController()
 	CachedDestination = FVector::ZeroVector;
 	FollowTime = 0.f;
 
-	// 컴포넌트 생성 (헤더에 전방 선언 class UMyDamageTextManagerComponent; 필요)
+	// 데미지 텍스트 컴포넌트 생성
 	DamageTextManagerComponent = CreateDefaultSubobject<UMyDamageTextManagerComponent>(TEXT("DamageTextManager"));
+	
+	// 시퀀서 재생 컴포넌트
+	CinematicComponent = CreateDefaultSubobject<UMyCinematicComponent>(TEXT("CinematicComponent"));
 }
 
 void AMyCPPProjectPlayerController::MoveToLocation(const FVector& Dest)
@@ -68,56 +76,7 @@ void AMyCPPProjectPlayerController::SetupInputComponent()
 void AMyCPPProjectPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	if (IsLocalController() && PrimaryLayoutClass)
-	{
-		// 생성 후 'RootLayoutInstance' 변수에 저장
-		RootLayoutInstance = CreateWidget<UPrimaryGameLayout>(this, PrimaryLayoutClass);
-		if (RootLayoutInstance)
-		{
-			RootLayoutInstance->AddToPlayerScreen(0);
-
-			FString MapName = GetWorld()->GetMapName();
-			bool bIsTransitionMap = MapName.Contains(TEXT("L_Transition"));
-			
-			// 레이아웃이 성공적으로 생성된 직후에 로딩창 체크 및 호출
-			UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance());
-			if (bIsTransitionMap || (GI && GI->bIsLoadingInProgress))
-			{
-				ShowLoadingScreen();
-			}
-			
-			// HUD Push 로직
-			if (!bIsTransitionMap && HUDWidgetClass)
-			{
-				RootLayoutInstance->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(
-					MyGameplayTags::UI_Layer_Game,
-					false,
-					HUDWidgetClass,
-					[this](EAsyncWidgetLayerState State, UCommonUserWidget* Screen)
-					{
-						if (State == EAsyncWidgetLayerState::AfterPush)
-						{
-							if (UMyUserWidget* TargetHUD = Cast<UMyUserWidget>(Screen))
-							{
-								if (UAbilitySystemComponent* ASC =
-									UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetPawn()))
-								{
-									TargetHUD->SetAbilitySystemComponent(ASC);
-								}
-
-								if (GetWorld())
-								{
-									GetWorld()->GetTimerManager().SetTimerForNextTick(
-										this, &ThisClass::SetInputFocusToGameViewport);
-								}
-							}
-						}
-					}
-				);
-			}
-		}
-	}
+	InitializeUI();
 	
 	// 보스 사망 메시지 리스너 등록
 	UGameplayMessageSubsystem& MessageSubsystem = UGameplayMessageSubsystem::Get(this);
@@ -335,86 +294,119 @@ void AMyCPPProjectPlayerController::SetHUDVisibility(bool bVisible)
 // 메시지 수신 시 호출될 콜백 함수
 void AMyCPPProjectPlayerController::OnBossDeadReceived(FGameplayTag Channel, const FMyBossMessageStruct& Payload)
 {
-	// 보스가 죽었으므로 결과창 UI 푸시
-	// 이전에 만든 PushWidgetToModalLayer 함수를 활용합니다.
-	if (!ResultWidgetClass.IsNull())
-	{
-		PushWidgetToModalLayer(ResultWidgetClass);
-	}
+	// 게임 속도 늦추기 (타격감 및 연출)
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.1f);
+
+	// 1.5초(실제 시간 0.15초) 후 속도 복구 및 결과창 출력
+	FTimerHandle ResultTimer;
+	GetWorldTimerManager().SetTimer(ResultTimer, [this]() {
+		UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
+		if (!ResultWidgetClass.IsNull())
+		{
+			PushWidgetToModalLayer(ResultWidgetClass);
+		}
+	}, 1.0f, false);
 }
 
 void AMyCPPProjectPlayerController::ShowLoadingScreen() 
 {
-	if (!RootLayoutInstance || LoadingWidgetClass.IsNull()) return;
-	if (LoadingWidgetInstance) return;
-	
-	// 비동기가 아닌 동기식으로 클래스를 즉시 로드합니다.
-	UClass* LoadedClass = LoadingWidgetClass.LoadSynchronous();
-	if (LoadedClass)
+	UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance());
+	// NextTick이 실행될 때 이미 로딩이 끝났다면 로딩창을 띄우지 않음!
+	if (GI)
 	{
-		LoadingWidgetInstance = RootLayoutInstance->PushWidgetToLayerStack<UCommonActivatableWidget>(
-			MyGameplayTags::UI_Layer_Modal,
-			LoadedClass
-		);
-		UE_LOG(LogTemp, Log, TEXT("[Loading] Loading Screen Visible."));
+		GI->StartLoadingScreen();
+	}
+}
+
+void AMyCPPProjectPlayerController::PostSeamlessTravel()
+{
+	Super::PostSeamlessTravel();
+	InitializeUI();
+}
+
+void AMyCPPProjectPlayerController::InitializeUI()
+{
+	if (!IsLocalController() || !PrimaryLayoutClass) return;
+
+	// 기존 레이아웃 정리 (심리스 트래블 시 이전 레벨의 위젯 잔해 제거)
+	if (RootLayoutInstance)
+	{
+		RootLayoutInstance->RemoveFromParent();
+		RootLayoutInstance = nullptr;
+	}
+
+	// 루트 레이아웃 생성 및 화면 부착
+	RootLayoutInstance = CreateWidget<UPrimaryGameLayout>(this, PrimaryLayoutClass);
+	if (RootLayoutInstance)
+	{
+		RootLayoutInstance->AddToPlayerScreen(0);
+
+		FString MapName = GetWorld()->GetMapName();
+		bool bIsTransitionMap = MapName.Contains(TEXT("L_Transition"));
+		bool bIsBattleMap = MapName.Contains(TEXT("L_Battle")); // 전투 맵 체크
+
+		// 로딩 상태 체크 (GI의 영구 UI 방식 호출)
+		UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance());
+		if (GI && GI->bIsLoadingInProgress)
+		{
+			// GI 기반 로딩창은 월드와 독립적이므로, 여기서 한 번 더 호출해도
+			// GI 내부에서 "이미 떠있으면 무시"하는 로직이 있다면 안전합니다.
+			ShowLoadingScreen();
+		}
+		// // 전투 맵이나 전환 맵이 아닐 때만 HUD를 즉시 생성
+		// if (!bIsTransitionMap && !bIsBattleMap && HUDWidgetClass)
+		// {
+		// 	CreateHUD();
+		// }
 	}
 	
-	
-	// // 비동기 푸시 시 콜백을 통해 인스턴스를 저장합니다.
-	// RootLayoutInstance->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(
-	// 	MyGameplayTags::UI_Layer_Modal,
-	// 	true,
-	// 	LoadingWidgetClass,
-	// 	[this](EAsyncWidgetLayerState State, UCommonActivatableWidget* Screen)
-	// 	{
-	// 		if (State == EAsyncWidgetLayerState::AfterPush)
-	// 		{
-	// 			LoadingWidgetInstance = Cast<UCommonActivatableWidget>(Screen); // 인스턴스 저장
-	// 			UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance());
-	// 			if (GI && !GI->bIsLoadingInProgress)
-	// 			{
-	// 				OnExperienceLoadCompleted(); // 다시 호출하여 닫기 수행
-	// 			}
-	// 		}
-	// 	}
-	// );
 }
 
 void AMyCPPProjectPlayerController::OnExperienceLoadCompleted() 
 {
-	FString MapName = GetWorld()->GetMapName();
-	if (MapName.Contains(TEXT("L_Transition")))
+	if (GetWorld()->GetMapName().Contains(TEXT("L_Shop")))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[Loading] Still in Transition Map. Keep Loading Screen."));
-		return;
-	}
-	// 로딩 플래그 초기화
-	if (UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance()))
-	{
-		GI->bIsLoadingInProgress = false;
+		FinishLoading(); // 로딩창 끄기
+		if (CinematicComponent)
+		{
+			CinematicComponent->PlayIntroSequence(); // 컴포넌트에 위임
+		}
 	}
 	
-	// 저장해둔 로딩 위젯 인스턴스를 비활성화합니다.
-	if (LoadingWidgetInstance)
+	FString MapName = GetWorld()->GetMapName();
+	// 목적지(L_Battle)에 도착했는지 확인
+	if (MapName.Contains(TEXT("L_Dwarf_City")))
 	{
-		LoadingWidgetInstance->DeactivateWidget();
-		LoadingWidgetInstance = nullptr; // 참조 해제
-		UE_LOG(LogTemp, Error, TEXT("[Loading] Final Destination Reached. Closing Loading Screen."));
+		FinishLoading(); // 로딩창 끄기
+		if (CinematicComponent)
+		{
+			CinematicComponent->PlayIntroSequence(); // 컴포넌트에 위임
+		}
 	}
-	else
+
+	// 만약 L_Transition 맵이라면 로딩창을 유지하고 아무것도 하지 않음
+	if (MapName.Contains(TEXT("L_Transition")))
 	{
-		// 위젯이 아직 생성 전이라면, 다음 프레임에 다시 시도하거나 로그를 남깁니다.
-		UE_LOG(LogTemp, Warning, TEXT("[Loading] Experience ready but LoadingWidgetInstance not yet created."));
+		return;
 	}
-	// 입력 포커스 강제 복구
-	// DeactivateWidget이 완료된 직후(NextTick)에 호출하는 것이 가장 안전합니다.
-	GetWorldTimerManager().SetTimerForNextTick(this, &ThisClass::SetInputFocusToGameViewport);
+
+	// 그 외의 경우(상점 등) 로딩창 즉시 종료
+	FinishLoading();
+	
 }
 
 void AMyCPPProjectPlayerController::PrepareLevelTransition(FString LevelName)
 {
 	PendingLevelPath = LevelName; // 이동할 곳 예약
-
+	
+	//ShowLoadingScreen();
+	
+	// 로딩 상태임을 게임 인스턴스에 기록 (안전장치)
+	if (UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance()))
+	{
+		GI->StartLoadingScreen();
+	}
+	
 	// 카메라 페이드 아웃 (0.5초 동안 검은색으로)
 	if (PlayerCameraManager) {
 		PlayerCameraManager->StartCameraFade(0.0f, 1.0f, 0.5f, FLinearColor::Black, false, true);
@@ -429,4 +421,106 @@ void AMyCPPProjectPlayerController::PrepareLevelTransition(FString LevelName)
 			World->ServerTravel(PendingLevelPath, false);
 		}
 	}, 0.5f, false);
+}
+
+void AMyCPPProjectPlayerController::PlayBattleIntroCutscene()
+{
+	APawn* TargetPawn = GetPawn();
+	if (!TargetPawn) return;
+
+	// 입력 및 조작 차단
+	SetIgnoreMoveInput(true);
+	bShowMouseCursor = false;
+
+	// 카메라 페이드 중단 (검은 화면 해제)
+	if (PlayerCameraManager) PlayerCameraManager->StopCameraFade();
+	
+	// 시작 카메라 위치 설정 (플레이어로부터 멀리 떨어진 공중)
+	FVector PawnLoc = TargetPawn->GetActorLocation();
+	FVector StartLoc = PawnLoc + FVector(-3000.f, -3000.f, 3000.f);
+	FRotator StartRot = (PawnLoc - StartLoc).Rotation();
+
+	// 임시로 컨트롤러의 위치와 회전을 멀리 보낸 뒤 블렌딩 시작
+	SetControlRotation(StartRot);
+	
+	// 임시 카메라 액터 생성 또는 계산된 위치에서 블렌딩 시작
+	// 여기서는 간단히 PlayerCameraManager를 통해 시점을 강제 고정하거나
+	// 전용 CameraActor를 활용하는 방식이 좋으나, C++에서는 다음과 같이 처리합니다.
+	
+	// 로딩창을 0.5초 후 페이드 아웃하며 풍경 노출 시작
+	FTimerHandle IntroTimer;
+	GetWorldTimerManager().SetTimer(IntroTimer, [this, TargetPawn]() {
+		if (UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance()))
+		{
+			GI->StopLoadingScreen();
+		}
+
+		// 카메라 블렌딩 시작 (멀리서 캐릭터에게 3초 동안 다가감)
+		// 주의: 이전에 멀리 있는 Actor를 ViewTarget으로 잡아야 함 (생략 시 현재 위치에서 시작)
+		SetViewTargetWithBlend(TargetPawn, 3.0f, EViewTargetBlendFunction::VTBlend_Cubic);
+
+		// 연출 종료 후 조작 복구
+		FTimerHandle EndTimer;
+		GetWorldTimerManager().SetTimer(EndTimer, [this]() {
+			SetIgnoreMoveInput(false);
+			bShowMouseCursor = true;
+			FinishLoading();
+		}, 3.0f, false);
+
+	}, 0.5f, false);
+}
+
+void AMyCPPProjectPlayerController::FinishLoading()
+{
+	// 로딩창이 이미 없거나 로딩 중이 아니라면 무시
+	UMyGameInstance* GI = Cast<UMyGameInstance>(GetGameInstance());
+	if (!GI || !GI->bIsLoadingInProgress) return;
+
+	// 텍스처 로딩을 위해 2초간 더 대기 후 로딩창 제거
+	float MinimumHoldTime = 2.0f;
+
+	FTimerHandle FinishTimer;
+	GetWorldTimerManager().SetTimer(FinishTimer, [this, GI]() {
+		GI->StopLoadingScreen();
+
+		// 조작 권한 복구
+		GetWorldTimerManager().SetTimerForNextTick(this, &ThisClass::SetInputFocusToGameViewport);
+
+		UE_LOG(LogTemp, Log, TEXT("[Loading] Loading screen removed after minimum hold time."));
+	}, MinimumHoldTime, false);
+	
+	GetWorldTimerManager().SetTimerForNextTick(this, &ThisClass::SetInputFocusToGameViewport);
+}
+
+void AMyCPPProjectPlayerController::CreateHUD()
+{
+	// HUD 생성 (L_Transition 맵이 아닐 때만 생성하도록 제한)
+	if (RootLayoutInstance && HUDWidgetClass)
+	{
+		RootLayoutInstance->PushWidgetToLayerStackAsync<UCommonActivatableWidget>(
+			MyGameplayTags::UI_Layer_Game,
+			false,
+			HUDWidgetClass,
+			[this](EAsyncWidgetLayerState State, UCommonUserWidget* Screen)
+			{
+				if (State == EAsyncWidgetLayerState::AfterPush)
+				{
+					if (UMyUserWidget* TargetHUD = Cast<UMyUserWidget>(Screen))
+					{
+						if (UAbilitySystemComponent* ASC =
+							UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(GetPawn()))
+						{
+							TargetHUD->SetAbilitySystemComponent(ASC);
+						}
+						
+						if (GetWorld())
+						{
+							GetWorld()->GetTimerManager().SetTimerForNextTick(
+								this, &ThisClass::SetInputFocusToGameViewport);
+						}
+					}
+				}
+			}
+		);
+	}
 }
