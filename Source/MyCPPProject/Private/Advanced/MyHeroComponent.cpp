@@ -23,6 +23,8 @@
 #include "Engine/Engine.h"
 #include "Particles/ParticleSystem.h"
 #include "MyGameplayTags.h"
+#include "Engine/AssetManager.h"
+#include "Materials/MaterialInterface.h"
 
 UMyHeroComponent::UMyHeroComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -74,68 +76,6 @@ void UMyHeroComponent::OnExperienceLoaded(const UMyExperienceDefinition* Experie
     }
 
     PreloadPawnAssets();
-    APawn* Pawn = GetPawn<APawn>();
-    if (!Pawn) return;
-    
-    // GAS 초기화 및 스킬 부여
-    IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Pawn);
-    if (ASI)
-    {
-        UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
-        if (ASC)
-        {
-            
-            if (Pawn->HasAuthority())
-            {
-                // InputID값을 고유하게 줘야 부여한 스킬들이 서로 다른것을 프로그램이 인식함
-                int32 InputID = 0;
-                // Ability 스킬 부여 로직 
-                for (const FMyAbilitySet_GameplayAbility& AbilitySet : PawnData->Abilities)
-                {
-                    if (AbilitySet.Ability)
-                    {
-                        FGameplayAbilitySpec Spec(AbilitySet.Ability);
-                        Spec.SourceObject = GetOwner();
-                        Spec.Level = 1;
-
-                        Spec.InputID = InputID++;
-                        
-                        if (AbilitySet.InputTag.IsValid())
-                        {
-                            Spec.GetDynamicSpecSourceTags().AddTag(AbilitySet.InputTag);
-                        }
-
-                        ASC->GiveAbility(Spec);
-                    }
-                }
-                // 초기 GameplayEffect (스텟 초기화) 적용
-                for (const TSubclassOf<UGameplayEffect>& EffectClass : PawnData->StartupGameplayEffects)
-                {
-                    if (EffectClass)
-                    {
-                        FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
-                        Context.AddSourceObject(Pawn);
-                        ASC->ApplyGameplayEffectToSelf(EffectClass.GetDefaultObject(), 1.0f, Context);
-                    }
-                }
-            }
-        }
-    }
-
-    // 입력 바인딩 (로딩이 늦게 끝난 경우 여기서 다시 한번 시도)
-    if (Pawn->InputComponent)
-    {
-        InitializePlayerInput(Pawn->InputComponent);
-    }
-    
-    // 로딩 완료를 컨트롤러에 알림
-    if (Pawn)
-    {
-        if (AMyCPPProjectPlayerController* PC = Cast<AMyCPPProjectPlayerController>(Pawn->GetController()))
-        {
-            PC->OnExperienceLoadCompleted();
-        }
-    }
 }
 
 void UMyHeroComponent::InitializePlayerInput(UInputComponent* PlayerInputComponent)
@@ -211,11 +151,6 @@ void UMyHeroComponent::InitializePlayerInput(UInputComponent* PlayerInputCompone
 
 void UMyHeroComponent::Input_AbilityInputTagPressed(FGameplayTag InputTag)
 {
-    // [디버그 로그 추가] 화면에 현재 들어온 태그 이름을 빨간색으로 띄웁니다.
-    if (GEngine)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("Pressed Tag: %s"), *InputTag.ToString()));
-    }
     // 캐릭터의 GAS에게 입력이 눌렸음을 전달
     IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetPawn<APawn>());
     if (!ASI) return;
@@ -271,8 +206,6 @@ void UMyHeroComponent::Input_AbilityInputTagReleased(FGameplayTag InputTag)
         {
             // 입력이 떨어졌음을 스킬 내부로 전달 (WaitInputRelease 노드 등에서 사용)
             ASC->AbilityLocalInputReleased(Spec.InputID);
-            
-            UE_LOG(LogTemp, Log, TEXT("[Released] Input Tag: %s"), *InputTag.ToString());
         }
     }
 }
@@ -370,56 +303,140 @@ void UMyHeroComponent::Input_Move_Released(const FInputActionValue& InputActionV
 void UMyHeroComponent::PreloadPawnAssets()
 {
     if (!PawnData) return;
-
-    UE_LOG(LogTemp, Warning, TEXT("[Hero] Starting Preload for Player"));
+    
+    TArray<FSoftObjectPath> AssetsToLoad;
 
     // VFX 프리로드
-    for (auto VFX : PawnData->PreloadVFX)
-    {
-        if (VFX) UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded VFX: %s"), *VFX->GetName());
-    }
+    for (auto VFX : PawnData->PreloadVFX) { if (VFX) AssetsToLoad.Add(VFX); }
     
     // 파티클 프리로드
-    for (auto Particle : PawnData->PreloadParticles)
-    {
-        if (Particle) UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded Particle: %s"), *Particle->GetName());
-    }
-
+    for (auto Particle : PawnData->PreloadParticles) { if (Particle) AssetsToLoad.Add(Particle); }
+    
+    
     // SFX 프리로드
-    for (auto SFX : PawnData->PreloadSFX)
-    {
-        if (SFX) UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded SFX: %s"), *SFX->GetName());
-    }
-
+    for (auto SFX : PawnData->PreloadSFX) { if (SFX) AssetsToLoad.Add(SFX); }
+    
+    // 추가한 머티리얼 리스트 추가
+    for (auto Mat : PawnData->PreloadMaterials) { if (Mat) AssetsToLoad.Add(Mat); } 
+    
     // GameplayCue 프리로드 (LoadSynchronous 필수)
     for (const TSoftClassPtr<UObject>& CueSoftClass : PawnData->PreloadGameplayCues)
     {
         if (!CueSoftClass.IsNull())
         {
-            if (UClass* LoadedClass = CueSoftClass.LoadSynchronous())
-            {
-                LoadedClass->GetDefaultObject(); // CDO 생성으로 초기화 보장
-                UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded Cue: %s"), *LoadedClass->GetName());
-            }
+            AssetsToLoad.Add(CueSoftClass.ToSoftObjectPath());
         }
     }
     
-    for (auto Montage : PawnData->PreloadMontages)
-    {
-        if (Montage)
-        {
-            // UE_LOG(LogTemp, Log, TEXT("Preloaded Montage: %s"), *Montage->GetName());
-        }
-    }
+    // montage 프리로드
+    for (auto Montage : PawnData->PreloadMontages) { if (Montage) AssetsToLoad.Add(Montage); }
     
+    
+    // geclass 로드
     for (const TSubclassOf<UGameplayEffect>& GEClass : PawnData->PreloadGameplayEffects)
     {
         if (GEClass)
         {
-            // CDO(Class Default Object)를 가져와서 확실하게 초기화
             GEClass->GetDefaultObject();
-            UE_LOG(LogTemp, Log, TEXT("[Hero] Preloaded GE: %s"), *GEClass->GetName());
         }
+    }
+    
+    // 비동기 로드 요청
+    if (AssetsToLoad.Num() > 0)
+    {
+        UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateUObject(this, &ThisClass::OnPreloadCompleted));
+    }
+    else
+    {
+        OnPreloadCompleted();
     }
 }
 
+void UMyHeroComponent::OnPreloadCompleted()
+{
+
+    APawn* Pawn = GetPawn<APawn>();
+    if (!Pawn) return;
+    
+    // 프리로드된 머티리얼들을 순회하며 리소스 강제 업데이트
+    for (auto Mat : PawnData->PreloadMaterials)
+    {
+        if (Mat)
+        {
+#if WITH_EDITOR
+            // 머티리얼의 렌더링 리소스를 강제로 업데이트하여 GPU에 준비시킵니다.
+            Mat->ForceRecompileForRendering();
+#endif
+        }
+    }
+    
+    for (auto Mat : PawnData->PreloadMaterials)
+    {
+        if (Mat)
+        {
+#if WITH_EDITOR
+            Mat->ForceRecompileForRendering();
+#endif
+        }
+    }
+    
+    // GAS 초기화 및 스킬 부여
+    IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Pawn);
+    if (ASI)
+    {
+        UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
+        if (ASC)
+        {
+            
+            if (Pawn->HasAuthority())
+            {
+                // InputID값을 고유하게 줘야 부여한 스킬들이 서로 다른것을 프로그램이 인식함
+                int32 InputID = 0;
+                // Ability 스킬 부여 로직 
+                for (const FMyAbilitySet_GameplayAbility& AbilitySet : PawnData->Abilities)
+                {
+                    if (AbilitySet.Ability)
+                    {
+                        FGameplayAbilitySpec Spec(AbilitySet.Ability);
+                        Spec.SourceObject = GetOwner();
+                        Spec.Level = 1;
+
+                        Spec.InputID = InputID++;
+                        
+                        if (AbilitySet.InputTag.IsValid())
+                        {
+                            Spec.GetDynamicSpecSourceTags().AddTag(AbilitySet.InputTag);
+                        }
+
+                        ASC->GiveAbility(Spec);
+                    }
+                }
+                // 초기 GameplayEffect (스텟 초기화) 적용
+                for (const TSubclassOf<UGameplayEffect>& EffectClass : PawnData->StartupGameplayEffects)
+                {
+                    if (EffectClass)
+                    {
+                        FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+                        Context.AddSourceObject(Pawn);
+                        ASC->ApplyGameplayEffectToSelf(EffectClass.GetDefaultObject(), 1.0f, Context);
+                    }
+                }
+            }
+        }
+    }
+
+    // 입력 바인딩 (로딩이 늦게 끝난 경우 여기서 다시 한번 시도)
+    if (Pawn->InputComponent)
+    {
+        InitializePlayerInput(Pawn->InputComponent);
+    }
+    
+    // 로딩 완료를 컨트롤러에 알림
+    if (Pawn)
+    {
+        if (AMyCPPProjectPlayerController* PC = Cast<AMyCPPProjectPlayerController>(Pawn->GetController()))
+        {
+            PC->OnExperienceLoadCompleted();
+        }
+    }
+}

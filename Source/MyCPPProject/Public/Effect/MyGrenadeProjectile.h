@@ -39,6 +39,10 @@ public:
 	// 폭발 시 적용할 효과 (데미지, 상태이상 등)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GameplayEffect")
 	TSubclassOf<UGameplayEffect> ExplosionEffectClass;
+	
+	// 폭발 시 사운드 재생
+	UPROPERTY(EditAnywhere, Category = "GameplayEffect")
+	TObjectPtr<USoundBase> ExplosionSound;
 
 	// 투사체 스펙 (데미지 수치 등을 담음)
 	FGameplayEffectSpecHandle DamageEffectSpecHandle;

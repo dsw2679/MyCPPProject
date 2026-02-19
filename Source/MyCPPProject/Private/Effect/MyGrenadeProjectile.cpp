@@ -7,6 +7,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "MyGameplayTags.h"
+#include "Kismet/GameplayStatics.h"
 
 AMyGrenadeProjectile::AMyGrenadeProjectile()
 {
@@ -67,6 +68,12 @@ void AMyGrenadeProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 					// 던진 사람의 ASC를 통해 모든 클라이언트에게 "여기서 터졌다"고 방송
 					InstigatorASC->ExecuteGameplayCue(MyGameplayTags::GameplayCue_Grenade_Explosion, Params);
 				}
+			}
+			
+			if (ExplosionSound)
+			{
+				// 폭발 위치에서 사운드 재생
+				UGameplayStatics::PlaySound2D(this, ExplosionSound);
 			}
 			Destroy();
 		}

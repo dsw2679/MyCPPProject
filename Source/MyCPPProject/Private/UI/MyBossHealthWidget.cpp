@@ -31,7 +31,11 @@ void UMyBossHealthWidget::NativeConstruct()
 	MyGameplayTags::Message_Boss_InitInfo,
 	this,
 	&UMyBossHealthWidget::OnInitInfoMessageReceived
-);
+	);
+	
+	FMyBossMessageStruct RequestPayload;
+	// 필요 시 위젯의 소유자 정보 등을 담음
+	MessageSubsystem.BroadcastMessage(MyGameplayTags::Message_Request_BossInfo, RequestPayload);
 }
 
 void UMyBossHealthWidget::NativeDestruct()

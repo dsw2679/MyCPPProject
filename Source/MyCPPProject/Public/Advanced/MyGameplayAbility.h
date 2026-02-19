@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "LevelSequencePlayer.h"
 #include "MyGameplayAbility.generated.h"
 
 /**
@@ -107,4 +108,7 @@ protected:
 	// 보스 사망 메시지를 전송하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void BroadcastBossDeathMessage();
+	
+	UFUNCTION(BlueprintCallable, Category = "Ability|Cinematic")
+	ULevelSequencePlayer* PlaySequenceAtAvatarLocation(ULevelSequence* InSequence);
 };

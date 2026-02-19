@@ -40,6 +40,7 @@ protected:
 	
 	// 프리로드
 	void PreloadPawnAssets();
+	void OnPreloadCompleted();
 
 	// 이동 관련 변수
 	FVector CachedDestination;

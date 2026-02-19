@@ -15,6 +15,7 @@ class UNiagaraSystem;
 class UParticleSystem;
 class UGameplayEffect;
 class UAnimMontage;
+class UMaterialInterface;
 
 USTRUCT(BlueprintType)
 struct FMyAbilitySet_GameplayAbility
@@ -90,6 +91,10 @@ public:
 	// 프리로드할 GameplayEffect 목록 (공격용 GE 등)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Abilities")
 	TArray<TSubclassOf<UGameplayEffect>> PreloadGameplayEffects;
+	
+	// 프리로드할 머티리얼(데칼 등) 리스트
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Visuals")
+	TArray<TObjectPtr<UMaterialInterface>> PreloadMaterials;
 	
 	// 게임 시작 시 적용할 GameplayEffect 목록 (스텟 초기화 등)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lyra|Abilities")

@@ -92,6 +92,9 @@ void AMyBossCharacter::BeginPlay()
 		GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AMyBossCharacter::OnCapsuleBeginOverlap);
 		GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AMyBossCharacter::OnCapsuleHit);
 	}
+	
+	BossInfoRequestListenerHandle = UGameplayMessageSubsystem::Get(this).RegisterListener(
+	MyGameplayTags::Message_Request_BossInfo, this, &AMyBossCharacter::OnBossInfoRequested);
 }
 
 void AMyBossCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -297,13 +300,26 @@ void AMyBossCharacter::PreloadAssets()
 
 void AMyBossCharacter::OnBossInfoRequested(FGameplayTag Channel, const struct FMyBossMessageStruct& Payload)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Boss] RECEIVED REQUEST from UI! Sending Response..."));
 	
-	FMyBossMessageStruct Message;
-	Message.BossActor = this;
-	Message.BossASC = this->GetAbilitySystemComponent();
+	// FMyBossMessageStruct Message;
+	// Message.BossActor = this;
+	// Message.BossASC = this->GetAbilitySystemComponent();
+	//
+	// UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Request_BossInfo, Message);
+	
+	// 현재 상태(체력, 이름 등)를 즉시 다시 방송
+	FMyBossInfoMessage InfoMsg;
+	InfoMsg.BossName = PawnData->BossName;
+	InfoMsg.EnrageTimeLimit = PawnData->EnrageTimeLimit;
+	UGameplayMessageSubsystem::Get(this).BroadcastMessage(MyGameplayTags::Message_Boss_InitInfo, InfoMsg);
 
-	UGameplayMessageSubsystem::Get(GetWorld()).BroadcastMessage(MyGameplayTags::Message_Request_BossInfo, Message);
+	// 체력 정보도 즉시 전송
+	FMyBossHealthMessage HealthMsg;
+	if (const UMyAttributeSet* AS = Cast<UMyAttributeSet>(AttributeSet)) {
+		HealthMsg.CurrentHealth = AS->GetHealth();
+		HealthMsg.MaxHealth = AS->GetMaxHealth();
+		UGameplayMessageSubsystem::Get(this).BroadcastMessage(MyGameplayTags::Message_Boss_HealthChanged, HealthMsg);
+	}
 }
 
 void AMyBossCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)

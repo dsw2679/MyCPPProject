@@ -33,6 +33,7 @@ public:
 	int32 GetTotalItemCount(const UMyItemDefinition* ItemDef) const;
 	
 	const TMap<TObjectPtr<const UMyItemDefinition>, int32>& GetOwnedItems() const { return OwnedItems; }
+	const TArray<TObjectPtr<const UMyItemDefinition>>& GetOwnedItemOrder() const { return OwnedItemOrder; }
 	
 	// (퀵슬롯)슬롯 A와 슬롯 B의 아이템을 서로 맞바꿉니다.
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
@@ -57,7 +58,7 @@ protected:
 	FGameplayTag GetInputTagForSlot(int32 SlotIndex);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	int32 Gold = 1000;
+	int32 Gold = 1500;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	TArray<FMyItemSlotInfo> BattleItemSlots; // 4개 고정 슬롯
@@ -65,5 +66,9 @@ protected:
 	// 상점에서 산 모든 아이템 보관함
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TMap<TObjectPtr<const UMyItemDefinition>, int32> OwnedItems;
+	
+	// 아이템이 추가된 순서를 저장하는 배열
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	TArray<TObjectPtr<const UMyItemDefinition>> OwnedItemOrder;
 		
 };

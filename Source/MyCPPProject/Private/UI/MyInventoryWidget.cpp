@@ -41,11 +41,17 @@ void UMyInventoryWidget::RefreshInventory(const FMyInventoryMessage& Message)
 	// 인벤토리 아이템 순회 및 슬롯 생성
 	int32 CurrentIndex = 0;
 
+	// OwnedItemOrder를 순회하여 순서 보장
+	const TArray<TObjectPtr<const UMyItemDefinition>>& ItemOrder = InvComp->GetOwnedItemOrder();
+	const TMap<TObjectPtr<const UMyItemDefinition>, int32>& AllItems = InvComp->GetOwnedItems();
+	
 	// MyInventoryComponent에 추가한 GetOwnedItems() 활용
-	for (const auto& ItemPair : InvComp->GetOwnedItems())
+	//for (const auto& ItemPair : InvComp->GetOwnedItems())
+	for (const UMyItemDefinition* ItemDef : ItemOrder)
 	{
-		const UMyItemDefinition* ItemDef = ItemPair.Key;
-		int32 Count = ItemPair.Value;
+		// const UMyItemDefinition* ItemDef = ItemPair.Key;
+		// int32 Count = ItemPair.Value;
+		int32 Count = AllItems.FindRef(ItemDef);;
 
 		// 개수가 0개 이하이거나 데이터가 없으면 패스
 		if (Count <= 0 || !ItemDef) continue;
@@ -70,7 +76,7 @@ void UMyInventoryWidget::RefreshInventory(const FMyInventoryMessage& Message)
 		if (GridSlot)
 		{
 			// 필요 시 여백(Padding)이나 정렬 설정을 여기서 할 수 있습니다.
-			GridSlot->SetHorizontalAlignment(HAlign_Center);
+			GridSlot->SetHorizontalAlignment(HAlign_Left);
 			GridSlot->SetVerticalAlignment(VAlign_Center);
 		}
 

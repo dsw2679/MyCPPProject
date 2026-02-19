@@ -10,6 +10,8 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Message/MyBossMessageStruct.h"
+#include "LevelSequencePlayer.h"
+#include "LevelSequenceActor.h"
 
 UMyGameplayAbility::UMyGameplayAbility()
 {
@@ -187,7 +189,6 @@ void UMyGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, cons
 			}
 	
 			FActiveGameplayEffectHandle ActiveGE = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
-			UE_LOG(LogTemp, Warning, TEXT("ApplyCost Result: %s"), ActiveGE.WasSuccessfullyApplied() ? TEXT("SUCCESS") : TEXT("FAILED"));
 		}
 	}
 }
@@ -296,5 +297,31 @@ void UMyGameplayAbility::BroadcastBossDeathMessage()
 		MessageSubsystem.BroadcastMessage(MyGameplayTags::Message_Boss_Dead, Message);
 		
 	}
+}
+
+ULevelSequencePlayer* UMyGameplayAbility::PlaySequenceAtAvatarLocation(ULevelSequence* InSequence)
+{
+	if (!InSequence || !GetWorld()) return nullptr;
+
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar) return nullptr;
+
+	// 시퀀스 플레이어 및 액터 생성
+	FMovieSceneSequencePlaybackSettings Settings;
+	ALevelSequenceActor* OutActor = nullptr;
+	ULevelSequencePlayer* Player = ULevelSequencePlayer::CreateLevelSequencePlayer(
+		GetWorld(), InSequence, Settings, OutActor);
+
+	if (Player && OutActor)
+	{
+		// 만약 전체 시퀀스의 원점을 옮기고 싶다면 (가장 확실한 방법)
+		// 보스의 위치와 회전을 시퀀스 액터의 위치로 설정해 버리는 것이 가장 직관적입니다.
+		OutActor->SetActorLocationAndRotation(Avatar->GetActorLocation(), Avatar->GetActorRotation());
+
+		Player->Play();
+		return Player;
+	}
+
+	return nullptr;
 }
 

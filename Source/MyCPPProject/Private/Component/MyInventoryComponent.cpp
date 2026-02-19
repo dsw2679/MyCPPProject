@@ -57,6 +57,12 @@ bool UMyInventoryComponent::TryBuyItem(const UMyItemDefinition* ItemDef)
 	// 구매 처리 (트랜잭션)
 	Gold -= ItemDef->Price;
 
+	// 처음 사는 아이템이라면 순서 배열에 등록
+	if (!OwnedItems.Contains(ItemDef))
+	{
+		OwnedItemOrder.Add(ItemDef);
+	}
+	
 	// TMap에 아이템 추가 (이미 있으면 수량 증가, 없으면 1로 초기화)
 	int32& OwnedCount = OwnedItems.FindOrAdd(ItemDef);
 	OwnedCount++;
